@@ -11,11 +11,8 @@ def popup():
     canvas.pack()
 
     visu_window.title("Visualisation")
-<<<<<<< HEAD
-    # test
-=======
     # test 
->>>>>>> master
+
     img = ImageTk.PhotoImage(master=canvas, image=Image.open("canard.jpg"))
     canvas.create_image(200, 200, tags="canard0", image=img)
     canvas.image = img
