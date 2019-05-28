@@ -25,6 +25,16 @@ def popup():
     return visu_window
 
 
+def SliderUpdate():
+    path = os.path.realpath(__file__).replace("sim_visu.py", "Images")
+    files = os.listdir(path)
+    for file in files:
+        if [i for i in [".jpg", ".jpeg", ".png"] if i in file]:
+            files.remove(file)
+    for i in files:
+        print(i)
+# pragma region OLD
+"""
 class RepeatEvery(threading.Thread):
     def __init__(self, interval, func, *args, **kwargs):
         threading.Thread.__init__(self)
@@ -41,19 +51,9 @@ class RepeatEvery(threading.Thread):
 
     def stop(self):
         self.runable = False
-
-
-def SliderUpdate():
-    path = os.path.realpath(__file__).replace("sim_visu.py", "Images")
-    files = os.listdir(path)
-    for file in files:
-        if [i for i in [".jpg", ".jpeg", ".png"] if i in file]:
-            files.remove(file)
-    for i in files:
-        print(i)
-
-
 thread = RepeatEvery(3, SliderUpdate)
 thread.start()
 thread.join(21)
 thread.stop
+"""
+# pragma endregion

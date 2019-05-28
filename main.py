@@ -1,6 +1,7 @@
 import tkinter as tk
 import sim_visu
 import time
+import CuekUtils
 window_min_width = "500"
 window_min_height = "281"
 window_collection = []
