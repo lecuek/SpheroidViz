@@ -129,3 +129,4 @@ dmypy.json
 .jpeg/
 .svg/
 Images/
+/.vscode
