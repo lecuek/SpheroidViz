@@ -1,11 +1,13 @@
 from tkinter import *
+from main import collections
 from PIL import Image, ImageTk
 import os
+import CuekUtils
 import time
 import threading
 
 
-def popup():
+def CreateWindow():
     window_min_width = "500"
     window_min_height = "500"
 
@@ -16,13 +18,20 @@ def popup():
     visu_window.update()
     visu_window.update_idletasks()
     visu_window.title("Visualisation")
-
-    slider = Scale(visu_window, from_=0, to=100, length=visu_window.winfo_reqwidth(), orient=HORIZONTAL)
+    path = os.path.realpath(__file__).replace("sim_visu.py", "Images")
+    numberofpngs = CuekUtils.DataManagement.getnumberofpng(path)
+    slider = Scale(visu_window, from_=0, to=numberofpngs, length=visu_window.winfo_reqwidth(), command=ChangeImage, orient=HORIZONTAL)
+    main.object_collection.append(slider)
     slider.pack()
     # img = ImageTk.PhotoImage(master=canvas, image=Image.open("canard.jpg"))
     # canvas.create_image(200, 200, tags="canard0", image=img)
     # canvas.image = img
     return visu_window
+
+
+def ChangeImage(num):
+    nom = "canard"+str(list(main.object_collection)[1].get())  # "canard" à changer plus tard quand le fichier config sera fait
+    print(nom)
 
 
 def SliderUpdate():
