@@ -5,12 +5,26 @@ from PIL import Image
 
 
 class DataManagement:
-    def svg_to_png(path, delete=False):
+    def svg_to_png(path, delete=False,outputheight=200,outputwidth=200):
+
         '''
-        Takes a svg file converts it to a png and deletes the svg if told to
+        Takes a svg file or an entire directory of svg files and 
+        converts it to a png and deletes the svg if told to
         :param str path: The path and name of the file path/name.svg
         :param bool delete: If it should delete the source or not, default False
         '''
+        if ".svg" not in path:
+            svgs = os.listdir(path)
+            for file in svgs:
+                
+                if ".svg" not in file:
+                    continue
+                print("converting", file)
+                cairosvg.svg2png(url=str(path+"/"+file), scale=0.5,
+                    write_to=str(path+"/"+file).replace("svg", "png"))
+                if delete:
+                    print("deleting", file)
+                    os.unlink(path+"/"+file)
         cairosvg.svg2png(url=path, write_to=str(path).replace("svg", "png"))
         if delete:
             os.unlink(path)

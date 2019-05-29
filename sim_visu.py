@@ -5,8 +5,12 @@ import os
 import CuekUtils
 import time
 import threading
+import json
 
-path = os.path.realpath(__file__).replace("sim_visu.py", "Images")
+config = json.load(open("config.json"))
+img_folder_path = os.path.realpath(__file__).replace("sim_visu.py", config["Image_folder_name"])
+
+
 def CreateWindow():
     window_min_width = "400"
     window_min_height = "450"
@@ -23,24 +27,41 @@ def CreateWindow():
     visu_window.update_idletasks()
     visu_window.title("Visualisation")  # Affichage de la fenêtre pour pouvoir adapter la taille du canvas
 
-    path = os.path.realpath(__file__).replace("sim_visu.py", "Images")
-    numberofpngs = CuekUtils.DataManagement.getnumberofpng(path)
+    numberofpngs = CuekUtils.DataManagement.getnumberofpng(img_folder_path)
     slider = Scale(visu_window, from_=0, to=numberofpngs-1, length=visu_window.winfo_reqwidth(), command=ChangeImage, orient=HORIZONTAL)
     ObjectCollection.slider_collection.append(slider)
     slider.pack()
-    img = ImageTk.PhotoImage(master=canvas, image=Image.open(path+"/canard0.png"))
-    canvas.create_image(200, 200, tags="canard0", image=img)
-    canvas.image = img
+    try:
+        img = ImageTk.PhotoImage(master=canvas, image=Image.open(img_folder_path+"canard0.png"))
+        canvas.create_image(200, 200, image=img)
+        canvas.image = img
+    except:
+        print("Did not find first picture")
     return visu_window
 
 
+def NameFormat(num):
+    nom = str(config["Name_format"])
+    compt = 0
+    for i in nom:
+        if i == '$':
+            compt += 1
+    compt -= len(str(num))
+    nom = nom.strip("$")
+    nbzero = ""
+    for i in range(compt):
+        nbzero += "0"
+    nom += nbzero+str(num)+config["Image_format"]
+    return nom
 def ChangeImage(num):
     # Cette ligne choppe le slider depuis la collection créé le nom avec sa valeur
     # !! NE PAS OUBLIER DE TROUVER UN MOYEN !!
     # !! QUI PERMETTRAIT DE LE RETROUVER    !!
     # !! SANS L'INDEX                       !!
-    nom = "canard"+str(list(ObjectCollection.slider_collection)[0].get())+".png"  # "canard" à changer plus tard quand le fichier config sera fait
-    image = ImageTk.PhotoImage(master=ObjectCollection.canvas_collection[0], image=Image.open(path+"/"+nom))
+    # nom = config["Name_format"]+str(list(ObjectCollection.slider_collection)[0].get())+".png"  # "canard" à changer plus tard quand le fichier config sera fait
+    nom = NameFormat(ObjectCollection.slider_collection[0].get())
+    print(nom)
+    image = ImageTk.PhotoImage(master=ObjectCollection.canvas_collection[0], image=Image.open(img_folder_path+nom))
     ObjectCollection.canvas_collection[0].create_image(200, 200, image=image)
     ObjectCollection.canvas_collection[0].image = image
     print(nom)
