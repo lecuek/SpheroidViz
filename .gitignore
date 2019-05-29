@@ -124,6 +124,7 @@ dmypy.json
 .pyre/
 
 # Pour Cuek Perso
+tests/
 .jpg/
 .png/
 .jpeg/
