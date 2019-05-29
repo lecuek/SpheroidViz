@@ -29,7 +29,7 @@ class DataManagement:
         if delete:
             os.unlink(path)
 
-    def getnumberofpng(path):
+    def getnumberofpng(path): #Returns the number of png files in a directory
         files = os.listdir(path)
         pngfiles = 0
         for file in files:
@@ -37,7 +37,7 @@ class DataManagement:
                 pngfiles += 1
         return pngfiles
         
-    def to_png():
+    def to_png(): # ???
         width = heigh = 300
         path = os.path.realpath(__file__).strip("convert.py")
         print(path)

@@ -5,11 +5,14 @@ import os
 import CuekUtils
 import time
 import json
+import threading
 from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 import sys
+import queue
 import logging
 
+callback_queue = queue.Queue()
 config = json.load(open("config.json"))
 img_folder_path = os.path.realpath(__file__).replace("sim_visu.py", config["Image_folder_name"])
 
@@ -40,7 +43,7 @@ def CreateWindow():
         canvas.image = img
     except:
         print("Did not find first picture")
-    thread = threading.Thread(target=DirectoryObserver)
+    thread = threading.Thread(target=DirectoryObserver, daemon=True)
     ObjectCollection.threadings.append(thread)
     thread.start()
     return visu_window
@@ -64,7 +67,7 @@ def NameFormat(num):
 class Event(LoggingEventHandler):
     def dispatch(self, event):
         print("Updating slider from eventhandler")
-        SliderUpdate()
+        callback_queue.put(SliderUpdate)
 
 
 def DirectoryObserver():

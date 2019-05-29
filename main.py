@@ -3,7 +3,8 @@ import sim_visu
 import time
 import CuekUtils
 from object_collections import ObjectCollection
-
+import queue
+import threading
 
 def windowPop():
     popup = sim_visu.CreateWindow()
@@ -22,4 +23,7 @@ if __name__ == "__main__":
     texte.grid(row=0, column=0, sticky="n")
     bouton = tk.Button(main_window, text="Lancer la visualisation", command=windowPop)
     bouton.grid(row=1, column=0)
+    ObjectCollection.threadings.append(threading.main_thread())
+    threading.main_thread()
     main_window.mainloop()
+    
