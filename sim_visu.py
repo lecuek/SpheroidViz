@@ -4,8 +4,11 @@ from PIL import Image, ImageTk
 import os
 import CuekUtils
 import time
-import threading
 import json
+from watchdog.observers import Observer
+from watchdog.events import LoggingEventHandler
+import sys
+import logging
 
 config = json.load(open("config.json"))
 img_folder_path = os.path.realpath(__file__).replace("sim_visu.py", config["Image_folder_name"])
@@ -32,11 +35,14 @@ def CreateWindow():
     ObjectCollection.slider_collection.append(slider)
     slider.pack()
     try:
-        img = ImageTk.PhotoImage(master=canvas, image=Image.open(img_folder_path+"canard0.png"))
+        img = ImageTk.PhotoImage(master=canvas, image=Image.open(img_folder_path+NameFormat(0)))
         canvas.create_image(200, 200, image=img)
         canvas.image = img
     except:
         print("Did not find first picture")
+    thread = threading.Thread(target=DirectoryObserver)
+    ObjectCollection.threadings.append(thread)
+    thread.start()
     return visu_window
 
 
@@ -53,12 +59,38 @@ def NameFormat(num):
         nbzero += "0"
     nom += nbzero+str(num)+config["Image_format"]
     return nom
+
+
+class Event(LoggingEventHandler):
+    def dispatch(self, event):
+        print("Updating slider from eventhandler")
+        SliderUpdate()
+
+
+def DirectoryObserver():
+    # Code piqué directement de la documentation de Watchdog
+    # https://pythonhosted.org/watchdog/quickstart.html#a-simple-example
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+    event_handler = Event()
+    observer = Observer()
+    observer.schedule(event_handler, img_folder_path, recursive=False)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+
 def ChangeImage(num):
-    # Cette ligne choppe le slider depuis la collection créé le nom avec sa valeur
+    # Fait le changement de l'image à chaque déplacements du slider
     # !! NE PAS OUBLIER DE TROUVER UN MOYEN !!
     # !! QUI PERMETTRAIT DE LE RETROUVER    !!
     # !! SANS L'INDEX                       !!
-    # nom = config["Name_format"]+str(list(ObjectCollection.slider_collection)[0].get())+".png"  # "canard" à changer plus tard quand le fichier config sera fait
+    # ANCIENNE LIGNE nom = config["Name_format"]+str(list(ObjectCollection.slider_collection)[0].get())+".png"  # "canard" à changer plus tard quand le fichier config sera fait
     nom = NameFormat(ObjectCollection.slider_collection[0].get())
     print(nom)
     image = ImageTk.PhotoImage(master=ObjectCollection.canvas_collection[0], image=Image.open(img_folder_path+nom))
@@ -68,32 +100,24 @@ def ChangeImage(num):
 
 
 def SliderUpdate():
-    path = os.path.realpath(__file__).replace("sim_visu.py", "Images")
+    print("Updating slider from SliderUpdate")
+    numberofpngs = CuekUtils.DataManagement.getnumberofpng(img_folder_path)
+
+    slider = Scale(
+        ObjectCollection.window_collection[1],
+        from_=0, to=numberofpngs-1,
+        length=ObjectCollection.window_collection[1].winfo_reqwidth(),
+        command=ChangeImage,
+        orient=HORIZONTAL
+    )
+    value = ObjectCollection.slider_collection[0].get()
+    ObjectCollection.slider_collection.remove(ObjectCollection.slider_collection[0])
+    ObjectCollection.slider_collection.append(slider)
+    slider.set(value)
+    """path = os.path.realpath(__file__).replace("sim_visu.py", "Images")
     files = os.listdir(path)
     for file in files:
         if [i for i in [".jpg", ".jpeg", ".png"] if i in file]:
             files.remove(file)
     for i in files:
-        print(i)
-""" Don't touch
-class RepeatEvery(threading.Thread):
-    def __init__(self, interval, func, *args, **kwargs):
-        threading.Thread.__init__(self)
-        self.interval = interval
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
-        self.runable = True
-
-    def run(self):
-        while self.runable:
-            self.func(*self.args, **self.kwargs)
-            time.sleep(self.interval)
-
-    def stop(self):
-        self.runable = False
-thread = RepeatEvery(3, SliderUpdate)
-thread.start()
-thread.join(21)
-thread.stop
-"""
+        print(i)"""
