@@ -2,21 +2,19 @@ import tkinter as tk
 import sim_visu
 import time
 import CuekUtils
-
-
+from object_collections import ObjectCollection
 
 window_min_width = "500"
 window_min_height = "281"
 
 
 main_window = tk.Tk()
-collections.window_collection.append(main_window)
+ObjectCollection.window_collection.append(main_window)
 main_window.minsize(width=window_min_width, height=window_min_height)
 
 
 def windowPop():
     popup = sim_visu.CreateWindow()
-    collections.window_collection.append(popup)
     popup.update()
 
 texte = tk.Label(main_window, text="hélo waurld")
