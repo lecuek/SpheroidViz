@@ -19,10 +19,10 @@ if __name__ == "__main__":
     ObjectCollection.window_collection.append(main_window)
     main_window.minsize(width=window_min_width, height=window_min_height)
 
-    texte = tk.Label(main_window, text="hélo waurld")
-    texte.grid(row=0, column=0, sticky="n")
+    texte = tk.Label(main_window, text="")
+    texte.pack(side="top",fill="both",expand=True)
     bouton = tk.Button(main_window, text="Lancer la visualisation", command=windowPop)
-    bouton.grid(row=1, column=0)
+    bouton.pack(side="top",fill="both",expand=False)
     ObjectCollection.threadings.append(threading.main_thread())
     threading.main_thread()
     main_window.mainloop()

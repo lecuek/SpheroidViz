@@ -64,12 +64,6 @@ def NameFormat(num):
     return nom
 
 
-class Event(LoggingEventHandler):
-    def dispatch(self, event):
-        print("Updating slider from eventhandler")
-        callback_queue.put(SliderUpdate)
-
-
 def DirectoryObserver():
     # Code piqué directement de la documentation de Watchdog
     # https://pythonhosted.org/watchdog/quickstart.html#a-simple-example
