@@ -3,5 +3,6 @@ class ObjectCollection:
     slider_collection = []
     canvas_collection = []
     threadings = []
+    button_collection = []
 
         
