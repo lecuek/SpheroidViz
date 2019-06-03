@@ -35,7 +35,11 @@ class DataManagement():
             if delete:
                 os.unlink(path)
 
+<<<<<<< HEAD
     def getnumberofpng(self, path):  # Returns the number of png files in specified directory
+=======
+    def getnumberofpng(path):
+>>>>>>> dev
         files = os.listdir(path)
         pngfiles = 0
         for file in files:
@@ -43,7 +47,11 @@ class DataManagement():
                 pngfiles += 1
         return pngfiles
         
+<<<<<<< HEAD
     def to_png(self): # ??? forgot but keeping it here jic
+=======
+    def to_png():
+>>>>>>> dev
         width = heigh = 300
         path = os.path.realpath(__file__).strip("convert.py")
         print(path)
