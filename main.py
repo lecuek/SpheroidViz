@@ -27,6 +27,9 @@ config = json.load(open("config.json"))
 scan_queue = queue.Queue()
 img_folder_path = os.path.realpath(__file__).replace(os.path.basename(__file__), config["Image_folder_name"])
 
+if not os.path.exists(img_folder_path):
+    print("Didn't find", config["Image_folder_name"], "creating...")
+    os.makedirs(config["Image_folder_name"])
 
 def CreateWindow():
     window_min_width = "400"

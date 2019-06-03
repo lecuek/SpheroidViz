@@ -1,4 +1,4 @@
-#import cairosvg
+import cairosvg
 import os
 import PIL
 from PIL import Image
