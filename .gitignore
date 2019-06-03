@@ -125,9 +125,17 @@ dmypy.json
 
 # Pour Cuek Perso
 tests/
+<<<<<<< HEAD
+*.jpg
+*.png
+*.jpeg
+*.svg
+Images/
+=======
 .jpg/
 .png/
 .jpeg/
 .svg/
 Images/
 /.vscode
+>>>>>>> dev
