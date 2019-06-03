@@ -23,9 +23,11 @@ def windowPop():
     popup = CreateWindow()
     popup.update()
 
-config = json.load(open("config.json"))
-scan_queue = queue.Queue()
+config = json.load(open("config.json"))  # loads config.json
+scan_queue = queue.Queue()  # Initializes the queue used for the scanning of the folder
 img_folder_path = os.path.realpath(__file__).replace(os.path.basename(__file__), config["Image_folder_name"])
+
+pngregex = StringManipulation().createregex(config["Name_format"])+config["Image_format"]  # Creates the regex to validate the files
 
 if not os.path.exists(img_folder_path):
     print("Didn't find", config["Image_folder_name"], "creating...")
@@ -47,7 +49,7 @@ def CreateWindow():
     visu_window.update()
     visu_window.update_idletasks()
     visu_window.title("Visualisation")  # Affichage de la fenetre pour pouvoir adapter la taille du canvas
-    numberofpngs = Dm.getnumberofpng(img_folder_path)
+    numberofpngs = Dm.getnumberofpng(img_folder_path,pngregex)
     if numberofpngs == -1:  # Bug fix (slider commençait à -1 si il n'y a pas d'image)
         numberofpngs = 0
     slider = Scale(visu_window, from_=0, to=numberofpngs-1, length=visu_window.winfo_reqwidth(), command=ChangeImage, orient=HORIZONTAL)
@@ -127,7 +129,7 @@ def SliderUpdate(msg=""):  # Updates the slider
     if msg != "":
         print(msg)
     Dm.svg_to_png(path=img_folder_path)
-    numberofpngs = Dm.getnumberofpng(path=img_folder_path)
+    numberofpngs = Dm.getnumberofpng(path=img_folder_path,reg=pngregex)
     ObjectCollection.slider_collection['Visu_Scale1'].configure(to=numberofpngs-1)
 
 

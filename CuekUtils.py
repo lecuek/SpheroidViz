@@ -4,7 +4,16 @@ import re
 import PIL
 from PIL import Image
 
-
+class StringManipulation():
+    def createregex(self,base):
+        try:
+            base = str(base)
+        except:
+            print(base,"cannot convert to str stopping...")
+            return
+        #snapshot$$$$$$$$
+        #snapshot[\d]*.png
+        return base.replace("$", "[\\d]")
 class DataManagement():
     def svg_to_png(self, path, delete=False,outputheight=200,outputwidth=200):
 
