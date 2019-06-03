@@ -1,5 +1,6 @@
 import cairosvg
 import os
+import re
 import PIL
 from PIL import Image
 
@@ -35,11 +36,12 @@ class DataManagement():
             if delete:
                 os.unlink(path)
 
-    def getnumberofpng(self, path):  # Returns the number of png files in specified directory
+    def getnumberofpng(self, path, reg="*.png"):  # Returns the number of png files in specified directory
+        pattern = re.compile(reg)
         files = os.listdir(path)
         pngfiles = 0
         for file in files:
-            if ".png" in file:
+            if  pattern.match(file) :
                 pngfiles += 1
         return pngfiles
         
@@ -55,3 +57,5 @@ class DataManagement():
                 img = img.resize((width, heigh), PIL.Image.ANTIALIAS)
                 img.save("canard"+str(i)+".png")
                 i += 1
+DM = DataManagement()
+DM.getnumberofpng("Images","snapshot[0-9]*.png")
