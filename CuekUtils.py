@@ -4,8 +4,8 @@ import PIL
 from PIL import Image
 
 
-class DataManagement:
-    def svg_to_png(path, delete=False,outputheight=200,outputwidth=200):
+class DataManagement():
+    def svg_to_png(self, path, delete=False,outputheight=200,outputwidth=200):
 
         '''
         Takes a svg file or an entire directory of svg files and 
@@ -35,7 +35,7 @@ class DataManagement:
             if delete:
                 os.unlink(path)
 
-    def getnumberofpng(path):  # Returns the number of png files in specified directory
+    def getnumberofpng(self, path):  # Returns the number of png files in specified directory
         files = os.listdir(path)
         pngfiles = 0
         for file in files:
