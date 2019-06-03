@@ -66,5 +66,3 @@ class DataManagement():
                 img = img.resize((width, heigh), PIL.Image.ANTIALIAS)
                 img.save("canard"+str(i)+".png")
                 i += 1
-DM = DataManagement()
-DM.getnumberofpng("Images","snapshot[0-9]*.png")
