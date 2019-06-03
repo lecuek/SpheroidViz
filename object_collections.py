@@ -4,5 +4,3 @@ class ObjectCollection:
     canvas_collection = []
     threadings = []
     button_collection = []
-
-        

@@ -14,14 +14,18 @@ import sys
 import logging
 
 
+class KillableThread(threading.Thread):
+    def stop(self):
+        self._stop
+
+
 def windowPop():
     popup = CreateWindow()
     popup.update()
 
-callback_queue = queue.Queue()
 config = json.load(open("config.json"))
-
-img_folder_path = os.path.realpath(__file__).replace(os.path.basename(__file__),config["Image_folder_name"])
+scan_queue = queue.Queue()
+img_folder_path = os.path.realpath(__file__).replace(os.path.basename(__file__), config["Image_folder_name"])
 
 
 def CreateWindow():
@@ -32,32 +36,65 @@ def CreateWindow():
     visu_window.minsize(window_min_width, window_min_height)
     ObjectCollection.window_collection.append(visu_window)
 
+    # WIDGET INITIALIZATION-----------------------------------------------
+
     canvas = Canvas(visu_window, width="400", height="400")
     ObjectCollection.canvas_collection.append(canvas)
-    canvas.pack()  # Création du Canvas
-
+    canvas.pack()  # Creation du Canvas
     visu_window.update()
     visu_window.update_idletasks()
-    visu_window.title("Visualisation")  # Affichage de la fenêtre pour pouvoir adapter la taille du canvas
-
+    visu_window.title("Visualisation")  # Affichage de la fenetre pour pouvoir adapter la taille du canvas
     numberofpngs = DataManagement.getnumberofpng(img_folder_path)
-    if numberofpngs == -1: numberofpngs = 0
+    if numberofpngs == -1:  # Bug fix (slider commençait à -1 si il n'y a pas d'image)
+        numberofpngs = 0
     slider = Scale(visu_window, from_=0, to=numberofpngs-1, length=visu_window.winfo_reqwidth(), command=ChangeImage, orient=HORIZONTAL)
     ObjectCollection.slider_collection.append(slider)
     slider.pack()
-    button = Button(visu_window,text="Rafraichir",command=SliderUpdate)
+    button = Button(visu_window, text="Rafraichir", command=SliderUpdate)
     ObjectCollection.button_collection.append(button)
     button.pack()
+
+    # WIDGET INITIALIZATION-----------------------------------------------
+
+    thread = threading.Thread(target=ThreadTarget)
+    ObjectCollection.threadings.append(thread)
+    thread.start()
+
     try:
         img = ImageTk.PhotoImage(master=canvas, image=Image.open(img_folder_path+NameFormat(0)))
         canvas.create_image(200, 200, image=img)
         canvas.image = img
     except:
         print("Did not find first picture")
+    visu_window.after(100, AfterCallback)    
     return visu_window
 
 
-def NameFormat(num):
+def AfterCallback():
+    try:
+        value = scan_queue.get(block=False)
+    except queue.Empty:
+        ObjectCollection.window_collection[1].after(1000, AfterCallback)
+    if value:
+        SliderUpdate("After")
+    ObjectCollection.window_collection[1].after(1000, AfterCallback)
+
+
+def ThreadTarget():
+    previousScan = 0
+    try:
+        while True:
+            scan = len(os.listdir(img_folder_path))
+            if scan > previousScan:
+                DataManagement.svg_to_png(img_folder_path)
+            previousScan = scan
+            scan_queue.put(True)
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("INTERRUPTION PAR LE CLAVIER LOL")
+
+
+def NameFormat(num):  # process le format du nom dans le fichier json pour remplacer les $
     nom = str(config["Name_format"])
     compt = 0
     for i in nom:
@@ -73,7 +110,7 @@ def NameFormat(num):
 
 
 def DirectoryObserver():
-    # Code piqué directement de la documentation de Watchdog
+    # Code pique directement de la documentation de Watchdog
     # https://pythonhosted.org/watchdog/quickstart.html#a-simple-example
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
@@ -91,37 +128,28 @@ def DirectoryObserver():
 
 
 def ChangeImage(num):
-    # Fait le changement de l'image à chaque déplacements du slider
-    # !! NE PAS OUBLIER DE TROUVER UN MOYEN !!
-    # !! QUI PERMETTRAIT DE LE RETROUVER    !!
-    # !! SANS L'INDEX                       !!
-    # ANCIENNE LIGNE nom = config["Name_format"]+str(list(ObjectCollection.slider_collection)[0].get())+".png"  # "canard" à changer plus tard quand le fichier config sera fait
+    # Changes the image every slider step
+    # !! DON'T FORGET TO CHANGE THE WAY I REFER TO OBJECTS ASAP !!
     nom = NameFormat(ObjectCollection.slider_collection[0].get())
     try:
         image = ImageTk.PhotoImage(master=ObjectCollection.canvas_collection[0], image=Image.open(img_folder_path+nom))
         ObjectCollection.canvas_collection[0].create_image(200, 200, image=image)
         ObjectCollection.canvas_collection[0].image = image
     except:
-        print(nom,"doesn't exist")
+        print(nom, "doesn't exist")
 
 
-def SliderUpdate():
-    print("Updating slider from SliderUpdate")
+def SliderUpdate(msg=""):  # Updates the slider 
+    if msg != "":
+        print(msg)
     DataManagement.svg_to_png(img_folder_path)
     numberofpngs = DataManagement.getnumberofpng(img_folder_path)
-    slider = Scale(
-        ObjectCollection.window_collection[1],
-        from_=0, to=numberofpngs-1,
-        length=ObjectCollection.window_collection[1].winfo_reqwidth(),
-        command=ChangeImage,
-        orient=HORIZONTAL
-    )
-    value = ObjectCollection.slider_collection[0].get()
-    ObjectCollection.slider_collection[0].destroy()
-    ObjectCollection.slider_collection.remove(ObjectCollection.slider_collection[0])
-    ObjectCollection.slider_collection.append(slider)
-    slider.pack()
-    ObjectCollection.window_collection[1].update()
+    ObjectCollection.slider_collection[0].configure(to=numberofpngs-1)
+
+
+def on_closing():
+    for thread in ObjectCollection.threadings
+
 
 if __name__ == "__main__":
     window_min_width = "500"
@@ -131,17 +159,25 @@ if __name__ == "__main__":
     ObjectCollection.window_collection.append(main_window)
     main_window.minsize(width=window_min_width, height=window_min_height)
 
+    # WIDGET INITIALIZATION-----------------------------------------------
+
     texte = Label(main_window, text="")
-    texte.pack(side="top",fill="both",expand=True)
+    texte.pack(side="top", fill="both", expand=True)
     bouton = Button(main_window, text="Lancer la visualisation", command=windowPop)
-    bouton.pack(side="top",fill="both",expand=False)
+    bouton.pack(side="top", fill="both", expand=False)
+
+    # WIDGET INITIALIZATION-----------------------------------------------
+
     ObjectCollection.threadings.append(threading.main_thread())
     threading.main_thread()
-    main_window.mainloop()
-    """path = os.path.realpath(__file__).replace("sim_visu.py", "Images")
-    files = os.listdir(path)
-    for file in files:
-        if [i for i in [".jpg", ".jpeg", ".png"] if i in file]:
-            files.remove(file)
-    for i in files:
-        print(i)"""
+    # main_window.protocol("WM_DELETE_WINDOW",) """ POUR CLEAN QUAND LA FENETRE FERME A TERMINER """
+    try:
+        main_window.mainloop()
+    except KeyboardInterrupt:
+        print("Mainloop interrupted by keyboard")
+        for thread in ObjectCollection.threadings:
+            thread
+            thread._stop()
+            ObjectCollection.threadings.remove(thread)
+            continue
+        exit()

@@ -14,22 +14,28 @@ class DataManagement:
         :param bool delete: If it should delete the source or not, default False
         '''
         if ".svg" not in path:
-            svgs = os.listdir(path)
-            for file in svgs:
+            files = os.listdir(path)
+            for file in files:
                 
                 if ".svg" not in file:
-                    continue
-                print("converting", file)
-                cairosvg.svg2png(url=str(path+"/"+file), scale=0.5,
-                    write_to=str(path+"/"+file).replace("svg", "png"))
+                    continue  # Reminder: Continue instead of Break bc it completely kills the loop and stops
+                else:
+                    if file.replace(".svg", ".png") not in files:  # If not already converted
+                        print(file.replace(".svg", ".png"), "doesn't exist")
+                        print("converting", file)
+                        cairosvg.svg2png(
+                            url=str(path+"/"+file), scale=0.5,
+                            write_to=str(path+"/"+file).replace("svg", "png")
+                        )
                 if delete:
                     print("deleting", file)
                     os.unlink(path+"/"+file)
-        cairosvg.svg2png(url=path, write_to=str(path).replace("svg", "png"))
-        if delete:
-            os.unlink(path)
+        else:
+            cairosvg.svg2png(url=path, write_to=str(path).replace("svg", "png"))
+            if delete:
+                os.unlink(path)
 
-    def getnumberofpng(path): #Returns the number of png files in a directory
+    def getnumberofpng(path):  # Returns the number of png files in specified directory
         files = os.listdir(path)
         pngfiles = 0
         for file in files:
@@ -37,7 +43,7 @@ class DataManagement:
                 pngfiles += 1
         return pngfiles
         
-    def to_png(self): # ???
+    def to_png(self): # ??? forgot but keeping it here jic
         width = heigh = 300
         path = os.path.realpath(__file__).strip("convert.py")
         print(path)
