@@ -54,7 +54,7 @@ class DataManagement():
                 pngfiles += 1
         return pngfiles
         
-    def to_png(self): # ??? forgot but keeping it here jic
+    def to_png(self): # ??? forgot where i use it but keeping it here jic
         width = heigh = 300
         path = os.path.realpath(__file__).strip("convert.py")
         print(path)

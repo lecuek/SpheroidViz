@@ -8,16 +8,10 @@ from object_collections import ObjectCollection
 from PIL import Image, ImageTk
 import os
 import json
-from watchdog.observers import Observer
-from watchdog.events import LoggingEventHandler
 import sys
 import logging
 
 Dm = DataManagement()
-class KillableThread(threading.Thread):
-    def stop(self):
-        self._stop
-
 
 def windowPop():
     popup = CreateWindow()
@@ -59,6 +53,7 @@ def CreateWindow():
     # WIDGET INITIALIZATION-----------------------------------------------
 
     thread = threading.Thread(target=ThreadTarget)
+    thread.daemon = True
     ObjectCollection.threadings['Thread_Scan1'] = thread
     thread.start()
 
@@ -71,6 +66,7 @@ def CreateWindow():
     visu_window.after(100, AfterCallback)
     return visu_window
 
+# For Threading -----------------------------------------------------------------------------------
 
 def AfterCallback():
     try:
@@ -82,8 +78,6 @@ def AfterCallback():
     if value:
         SliderUpdate("After")
     ObjectCollection.window_collection['Visu'].after(1000, AfterCallback)
-
-
 def ThreadTarget():
     previousScan = 0
     try:
@@ -97,6 +91,7 @@ def ThreadTarget():
     except KeyboardInterrupt:
         print("ThreadTarget Keyboard interrupt")
 
+# For Threading -----------------------------------------------------------------------------------
 
 def NameFormat(num):  # process le format du nom dans le fichier json pour remplacer les $
     nom = str(config["Name_format"])
@@ -112,6 +107,7 @@ def NameFormat(num):  # process le format du nom dans le fichier json pour rempl
     nom += nbzero+str(num)+config["Image_format"]
     return nom
 
+# GUI INTERACTION ------------------------------------------------------------------------
 
 def ChangeImage(num):
     # Changes the image every slider step
@@ -132,6 +128,12 @@ def SliderUpdate(msg=""):  # Updates the slider
     numberofpngs = Dm.getnumberofpng(path=img_folder_path,reg=pngregex)
     ObjectCollection.slider_collection['Visu_Scale1'].configure(to=numberofpngs-1)
 
+# GUI INTERACTION ------------------------------------------------------------------------
+
+def Onclosing():
+    print("test")
+
+# MAIN -------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     window_min_width = "500"
@@ -150,7 +152,7 @@ if __name__ == "__main__":
 
     # WIDGET INITIALIZATION-----------------------------------------------
 
-    # main_window.protocol("WM_DELETE_WINDOW",) """ POUR CLEAN QUAND LA FENETRE FERME A TERMINER """
+    main_window.protocol("WM_DELETE_WINDOW",onClosing()) """ POUR CLEAN QUAND LA FENETRE FERME ,A TERMINER """
     try:
         main_window.mainloop()
     except KeyboardInterrupt:
