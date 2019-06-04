@@ -4,7 +4,6 @@ from object_collections import ObjectCollection
 import queue
 import threading
 from tkinter import *
-from object_collections import ObjectCollection
 from PIL import Image, ImageTk
 import os
 import json
@@ -15,6 +14,8 @@ Dm = DataManagement()
 
 def windowPop():
     popup = CreateWindow()
+    popup.grab_set()
+    popup.protocol("WM_DELETE_WINDOW",popup.stop)
     popup.update()
 
 config = json.load(open("config.json"))  # loads config.json
@@ -26,16 +27,24 @@ pngregex = StringManipulation().createregex(config["Name_format"])+config["Image
 if not os.path.exists(img_folder_path):
     print("Didn't find", config["Image_folder_name"], "creating...")
     os.makedirs(config["Image_folder_name"])
+class WindowPlus(Toplevel):
+    def __init__(self, *args, **kwargs):
+        Toplevel.__init__(self, *args, **kwargs)
+        self.grab_set()
+    def stop(self):
+        self.grab_release()
+        self.destroy()
 
 def CreateWindow():
     window_min_width = "400"
     window_min_height = "450"
 
-    visu_window = Tk()
+    visu_window = WindowPlus()
+
     visu_window.minsize(window_min_width, window_min_height)
     ObjectCollection.window_collection['Visu'] = visu_window
 
-    # WIDGET INITIALIZATION-----------------------------------------------
+    # WIDGET INITIALIZATION------------------------------------------------------------------------
 
     canvas = Canvas(visu_window, width="400", height="400")
     ObjectCollection.canvas_collection['Visu_Canvas1'] = canvas
@@ -50,7 +59,7 @@ def CreateWindow():
     ObjectCollection.slider_collection['Visu_Scale1'] = slider
     slider.pack()
 
-    # WIDGET INITIALIZATION-----------------------------------------------
+    # WIDGET INITIALIZATION------------------------------------------------------------------------
 
     thread = threading.Thread(target=ThreadTarget)
     thread.daemon = True
@@ -76,7 +85,7 @@ def AfterCallback():
         ObjectCollection.window_collection['Visu'].after(1000, AfterCallback)
         return
     if value:
-        SliderUpdate("After")
+        SliderUpdate()
     ObjectCollection.window_collection['Visu'].after(1000, AfterCallback)
 def ThreadTarget():
     previousScan = 0
@@ -93,6 +102,8 @@ def ThreadTarget():
 
 # For Threading -----------------------------------------------------------------------------------
 
+# DATA PROCESSING ---------------------------------------------------------------------------------
+
 def NameFormat(num):  # process le format du nom dans le fichier json pour remplacer les $
     nom = str(config["Name_format"])
     compt = 0
@@ -107,11 +118,11 @@ def NameFormat(num):  # process le format du nom dans le fichier json pour rempl
     nom += nbzero+str(num)+config["Image_format"]
     return nom
 
-# GUI INTERACTION ------------------------------------------------------------------------
+# DATA PROCESSING ---------------------------------------------------------------------------------
+# GUI INTERACTION ---------------------------------------------------------------------------------
 
 def ChangeImage(num):
     # Changes the image every slider step
-    # !! DON'T FORGET TO CHANGE THE WAY I REFER TO OBJECTS ASAP !!
     nom = NameFormat(ObjectCollection.slider_collection['Visu_Scale1'].get())
     try:
         image = ImageTk.PhotoImage(master=ObjectCollection.canvas_collection['Visu_Canvas1'], image=Image.open(img_folder_path+nom))
@@ -128,12 +139,8 @@ def SliderUpdate(msg=""):  # Updates the slider
     numberofpngs = Dm.getnumberofpng(path=img_folder_path,reg=pngregex)
     ObjectCollection.slider_collection['Visu_Scale1'].configure(to=numberofpngs-1)
 
-# GUI INTERACTION ------------------------------------------------------------------------
-
-def Onclosing():
-    print("test")
-
-# MAIN -------------------------------------------------------------------------------
+# GUI INTERACTION ---------------------------------------------------------------------------------
+# MAIN --------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     window_min_width = "500"
@@ -143,16 +150,16 @@ if __name__ == "__main__":
     ObjectCollection.window_collection['Main'] = main_window
     main_window.minsize(width=window_min_width, height=window_min_height)
 
-    # WIDGET INITIALIZATION-----------------------------------------------
+    # WIDGET INITIALIZATION------------------------------------------------------------------------
 
     texte = Label(main_window, text="")
     texte.pack(side="top", fill="both", expand=True)
     bouton = Button(main_window, text="Lancer la visualisation", command=windowPop)
     bouton.pack(side="top", fill="both", expand=False)
 
-    # WIDGET INITIALIZATION-----------------------------------------------
+    # WIDGET INITIALIZATION------------------------------------------------------------------------
 
-    main_window.protocol("WM_DELETE_WINDOW",onClosing()) """ POUR CLEAN QUAND LA FENETRE FERME ,A TERMINER """
+    
     try:
         main_window.mainloop()
     except KeyboardInterrupt:
