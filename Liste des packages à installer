@@ -1,4 +1,1 @@
-pip3 install cairocffi
-pip3 install cairosvg
-pip3 install watchdog
-
+pip3 install cairocffi && pip3 install cairosvg && pip3 install Image && pip3 install ImageTk

@@ -11,22 +11,11 @@ import sys
 import logging
 
 Dm = DataManagement()
-
-def windowPop():
-    popup = CreateWindow()
-    popup.grab_set()
-    popup.protocol("WM_DELETE_WINDOW",popup.stop)
-    popup.update()
-
 config = json.load(open("config.json"))  # loads config.json
 scan_queue = queue.Queue()  # Initializes the queue used for the scanning of the folder
 img_folder_path = os.path.realpath(__file__).replace(os.path.basename(__file__), config["Image_folder_name"])
-
 pngregex = StringManipulation().createregex(config["Name_format"])+config["Image_format"]  # Creates the regex to validate the files
 
-if not os.path.exists(img_folder_path):
-    print("Didn't find", config["Image_folder_name"], "creating...")
-    os.makedirs(config["Image_folder_name"])
 class WindowPlus(Toplevel):
     def __init__(self, *args, **kwargs):
         Toplevel.__init__(self, *args, **kwargs)
@@ -34,6 +23,48 @@ class WindowPlus(Toplevel):
     def stop(self):
         self.grab_release()
         self.destroy()
+
+
+class VisualisationCanvas(tk.Canvas):
+    def __init__(self, keyname="",*args, **kwargs):
+        '''
+        :param str keyname: Name in the collection
+        if not specified = Visu_Canvas+lengthofcollection
+        '''
+        if keyname == "":
+            keyname = "Visu_Canvas"+str(len(ObjectCollection.canvas_collection))
+        Canvas.__init__(self, *args, **kwargs)
+        ObjectCollection.canvas_collection[keyname] = self
+        self.bind("<Button-1>", self.changemode)
+    def changemode(self,event):
+        popup = Popup()
+        
+
+class Popup(tk.Toplevel):
+    def __init__(self, *args, **kwargs):
+        Toplevel.__init__(self, *args, **kwargs)
+        self.title("Changement de mode")
+        # WIDGETS INIT -----------------------------------------
+        self.l1 = Label(self, text="Choisissez votre mode de visualisation")
+        self.l1.grid(row=0, column=0)
+        self.lb = Listbox(self, selectmode=tk.SINGLE)
+        self.lb.grid(row=1, column=0)
+        self.update()
+        self.grab_set()
+        # WIDGETS INIT -----------------------------------------
+
+
+def windowPop():
+    popup = CreateWindow()
+    popup.grab_set()
+    popup.protocol("WM_DELETE_WINDOW",popup.stop)
+    popup.update()
+
+
+if not os.path.exists(img_folder_path):
+    print("Didn't find", config["Image_folder_name"], "creating...")
+    os.makedirs(config["Image_folder_name"])
+
 
 def CreateWindow():
     window_min_width = "400"
