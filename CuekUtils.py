@@ -11,8 +11,6 @@ class StringManipulation():
         except:
             print(base,"cannot convert to str stopping...")
             return
-        #snapshot$$$$$$$$
-        #snapshot[\d]*.png
         return base.replace("$", "[\\d]")
 class DataManagement():
     def svg_to_png(self, path, delete=False,outputheight=200,outputwidth=200):
