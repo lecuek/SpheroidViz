@@ -144,7 +144,7 @@ class VisuWindow(PopupWindow):
         self.initwidgets()
     
 
-    def initmodels(self, modelgrid="1x3"):  # Initializes the visualization canvases
+    def initmodels(self, modelgrid="2x2"):  # Initializes the visualization canvases
         print("Creating Canvas(es)")
         frame = Frame(self)
         frame.grid(row=0, column=0)
@@ -159,7 +159,7 @@ class VisuWindow(PopupWindow):
             self.destroy()
         for row in range(i):
             for col in range(j):
-                c = VisualizationCanvas("Visu_Canvas"+str(k), master=frame,borderwidth=1, bg=colors[k] )
+                c = VisualizationCanvas("Visu_Canvas"+str(k), master=frame,borderwidth=1,background=colors[k%len(colors)])
                 c.grid(row=row, column=col)
                 self.ownedcanvas.append(c)
                 k+=1
@@ -263,7 +263,7 @@ def CreateVisuModels():
         
     print("created",i,"visualization models ")
 
-colors = ["blue","green","red","yellow"]
+colors = ["blue","green","red","yellow","white","black","pink"] #Debug colors
 Dm = DataManagement()
 config = json.load(open("config.json"))  # loads config.json
 scan_queue = queue.Queue()  # Initializes the queue used for the scanning of the folder
