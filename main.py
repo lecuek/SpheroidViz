@@ -26,6 +26,7 @@ class PopupWindow(Toplevel):  # Window class that works like a popup
         Toplevel.__init__(self, *args, *kwargs)
         if keyname == "":
             keyname = "Window"+str(len(ObjectCollection.window_collection))
+        ObjectCollection.window_collection[keyname] = self
         self.grab_set()
     def stop(self):
         self.grab_release()
@@ -38,14 +39,14 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         :param str keyname: Name in the collection
         if not specified = Visu_Canvas+lengthofcollection
         '''
+        Canvas.__init__(self, *args, **kwargs)
         if keyname == "":
             keyname = "Visu_Canvas"+str(len(ObjectCollection.canvas_collection))
-        Canvas.__init__(self, *args, **kwargs)
         ObjectCollection.canvas_collection[keyname] = self
         self.bind("<Button-1>", self.changemode)
     def changemode(self, event):
-        popup = self.ModeSelectionPopup(self)
-        a=popup.lb.get(ACTIVE)
+        result = ModeSelectionPopup(self).getchoice()
+        print("result:",result)
         
     def ChangeImage(self): # Changes the image every slider step
         nom = NameFormat(ObjectCollection.slider_collection['Visu_Scale1'].get())
@@ -57,35 +58,43 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             print(nom, "doesn't exist")
     def ChangeImage2(self, image):
         pass
-    class ModeSelectionPopup(Toplevel):
-        #Master should have a getpopupdata method with data as argument
-        def __init__(self, master,*args, **kwargs):
-            Toplevel.__init__(self, *args, **kwargs)
-            self.title("Changement de mode")
-            # WIDGETS INIT -----------------------------------------
-            
-            # Label1
-            self.l1 = Label(self, text="Choisissez votre mode de visualisation")
-            self.l1.grid(row=0, column=0)
-            
-            # Listbox1
-            self.lb = Listbox(self, selectmode=SINGLE)
-            self.lb.insert(1,"Canard")
-            self.lb.grid(row=1, column=0)
-            
-            # Button1
-            self.b = Button(self, text="Ok",command=self.destroy)
-            self.b.grid(row=2,column=0)
 
-            self.update()
-            self.grab_set()
-            
-            # WIDGETS INIT -----------------------------------------
 
+class ModeSelectionPopup(object):
+    def __init__(self, parent):
+        self.toplevel = Toplevel(parent)
+        self.toplevel.title("Changement de mode")
+        self.selection = ""
+        # WIDGETS INIT -----------------------------------------
         
+        # Label1
+        self.l1 = Label(self.toplevel, text="Choisissez votre mode de visualisation")
+        self.l1.grid(row=0, column=0)
+        
+        # Listbox1
+        self.lb = Listbox(self.toplevel, selectmode=SINGLE)
+        numberofvis = config["Visualizations"]
+        for params in numberofvis:
+            for i,key in enumerate(params):
+                self.lb.insert(i,key)
+        self.lb.bind("<<ListboxSelect>>", self.onlistboxchange)
+        self.lb.grid(row=1, column=0)
 
+        # Button1
+        self.b = Button(self.toplevel, text="Ok",command=self.toplevel.destroy)
+        self.b.grid(row=2,column=0)
+        self.toplevel.update_idletasks()
+        self.toplevel.grab_set()
+        # WIDGETS INIT -----------------------------------------
+    def onlistboxchange(self, event):
+        w = event.widget
+        index = int(w.curselection()[0])
+        self.selection = w.get(index)
+        print(self.selection)
+    def getchoice(self):
+        self.toplevel.wait_window()
+        return self.selection
 
-    
 
 
 class VisuWindow(PopupWindow):

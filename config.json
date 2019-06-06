@@ -1,5 +1,6 @@
 {
-    "Visualisations": {
+    "Visualizations":
+    {
         "1": [
             {"Image_folder_name": "Images/"},
             {"Name_format": "snapshot$$$$$$$$"},
@@ -16,5 +17,4 @@
             {"Image_format": ".png"}
         ]
     }
-    
 }
