@@ -1,22 +1,43 @@
 {
     "base":{
+        "Name": "Test",
         "Image_folder_name": "Images/",
         "Name_format": "snapshot$$$$$$$$",
         "Image_format": ".png"
     },
     "Visualizations":
     {
-        "1": {
+        "Test1": {
+            "color": "red",
+            "Name": "Test1",
             "Image_folder_name": "Images/",
             "Name_format": "snapshot$$$$$$$$",
             "Image_format": ".png"
         },
-        "2": {
+        "Test2": {
+            "color": "green",
+            "Name": "Test2",
             "Image_folder_name": "Images/",
             "Name_format": "snapshot$$$$$$$$",
             "Image_format": ".png"
         },
-        "3": {
+        "Test3": {
+            "color": "blue",
+            "Name": "Test3",
+            "Image_folder_name": "Images/",
+            "Name_format": "snapshot$$$$$$$$",
+            "Image_format": ".png"
+        },
+        "Test4": {
+            "color": "white",
+            "Name": "Test4",
+            "Image_folder_name": "Images/",
+            "Name_format": "snapshot$$$$$$$$",
+            "Image_format": ".png"
+        },
+        "Test5": {
+            "color": "purple",
+            "Name": "Test5",
             "Image_folder_name": "Images/",
             "Name_format": "snapshot$$$$$$$$",
             "Image_format": ".png"
