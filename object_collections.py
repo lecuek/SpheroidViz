@@ -1,6 +1,7 @@
 class ObjectCollection:
-    window_collection = {}
-    slider_collection = {}
-    canvas_collection = {}
+    windows = {}
+    sliders = {}
+    canvases = {}
     threadings = {}
     button_collection = {}
+    visualization_modes = {}

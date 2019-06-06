@@ -10,23 +10,13 @@ import json
 import sys
 import logging
 
-Dm = DataManagement()
-config = json.load(open("config.json"))  # loads config.json
-scan_queue = queue.Queue()  # Initializes the queue used for the scanning of the folder
-img_folder_path = os.path.realpath(__file__).replace(os.path.basename(__file__), config["base"]["Image_folder_name"])
-pngregex = StringManipulation().createregex(config["base"]["Name_format"])+config["base"]["Image_format"]  # Creates the regex to validate the files
-
-if not os.path.exists(img_folder_path):
-    print("Didn't find", config["base"]["Image_folder_name"], "creating...")
-    os.makedirs(config["base"]["Image_folder_name"])
-
 class PopupWindow(Toplevel):  # Window class that works like a popup
     def __init__(self, keyname="", *args, **kwargs):
         print("Creating PopupWindow")
         Toplevel.__init__(self, *args, *kwargs)
         if keyname == "":
-            keyname = "Window"+str(len(ObjectCollection.window_collection))
-        ObjectCollection.window_collection[keyname] = self
+            keyname = "Window"+str(len(ObjectCollection.windows))
+        ObjectCollection.windows[keyname] = self
         self.grab_set()
     def stop(self):
         self.grab_release()
@@ -34,29 +24,57 @@ class PopupWindow(Toplevel):  # Window class that works like a popup
 
 
 class VisualizationCanvas(Canvas):  # Canvas used for visualization
-    def __init__(self, keyname="", *args, **kwargs):
+    def __init__(self, keyname="", size="", *args, **kwargs):
         '''
         :param str keyname: Name in the collection
+        :param str size: Size of the canvas ex:("200x200")
         if not specified = Visu_Canvas+lengthofcollection
         '''
+        if size != "":
+            try:
+                dim = re.split(r"x|X", size)  # Simple regex to process wanted modelgrid
+                i = int(dim[0])
+                j = int(dim[1])
+            except Exception as e:
+                print("Couldn't process the given size for canvas",e)
+
         Canvas.__init__(self, *args, **kwargs)
         if keyname == "":
-            keyname = "Visu_Canvas"+str(len(ObjectCollection.canvas_collection))
-        ObjectCollection.canvas_collection[keyname] = self
+            keyname = "Visu_Canvas"+str(len(ObjectCollection.canvases))
+        ObjectCollection.canvases[keyname] = self
         self.bind("<Button-1>", self.changemode)
 
 
     def changemode(self, event):
         result = ModeSelectionPopup(self).getchoice()
-        print("result:",result)
+        if result != "":
+            self.configure(background=ObjectCollection.visualization_modes[result].color)
+            # Change visualization mode
+        else:
+            print("Canceled")    
+
+
+
+class VisualisationMode():
+    def __init__(self, key, value):
         
+        self.name = value["Name"]
+        self.image_folder_name = value["Image_folder_name"]
+        self.name_format = value["Name_format"]
+        self.image_format = value["Image_format"]
+        self.color = value["color"]
+        ObjectCollection.visualization_modes[self.name] = self
+
+    def __str__(self):
+        return self.name
+
 
     def ChangeImage(self): # Changes the image every slider step
-        nom = NameFormat(ObjectCollection.slider_collection['Visu_Scale1'].get())
+        nom = NameFormat(ObjectCollection.sliders['Visu_Scale1'].get())
         try:
             image = ImageTk.PhotoImage(master=masterCanvas, image=Image.open(img_folder_path+nom))
-            ObjectCollection.canvas_collection['Visu_Canvas1'].create_image(200, 200, image=image)
-            ObjectCollection.canvas_collection['Visu_Canvas1'].image = image
+            ObjectCollection.canvases['Visu_Canvas1'].create_image(200, 200, image=image)
+            ObjectCollection.canvases['Visu_Canvas1'].image = image
         except:
             print(nom, "doesn't exist")
     def ChangeImage2(self, image):
@@ -76,16 +94,16 @@ class ModeSelectionPopup(object):
         
         # Listbox1
         self.lb = Listbox(self.toplevel, selectmode=SINGLE)
-        numberofvis = config["Visualizations"]
+        numberofvis = ObjectCollection.visualization_modes
+        print("Numberof vis------------", numberofvis)
 
         # Sorts the selection
         self.vislist = []
-        for params in numberofvis:
-            for i,key in enumerate(params):
-                self.vislist.append([i,key])
-                #self.lb.insert(i,key)
+        for i,vismod in numberofvis.items():
+            self.vislist.append([len(self.vislist),str(vismod)])
+            #self.lb.insert(i,key)
         self.vislist.sort(reverse=True)
-        # 
+         
         # Inserts in listbox
         for i in self.vislist:
             self.lb.insert(i[0],i[1])
@@ -111,14 +129,13 @@ class ModeSelectionPopup(object):
         self.toplevel.wait_window()
         return self.selection
 
-
-
 class VisuWindow(PopupWindow):
     
 
     def __init__(self, *args, **kwargs):
         print("Creating visualization window")
         Toplevel.__init__(self, *args, *kwargs)
+        self.canvaslist = []
         self.title("Visualisation")
         self.window_min_width = "400"
         self.window_min_height = "450"
@@ -127,9 +144,8 @@ class VisuWindow(PopupWindow):
         self.initwidgets()
     
 
-    def initmodels(self, modelgrid="2x2"):  # Initializes the visualization canvases
+    def initmodels(self, modelgrid="1x3"):  # Initializes the visualization canvases
         print("Creating Canvas(es)")
-        colors = ["blue","green","red","yellow"]
         frame = Frame(self)
         frame.grid(row=0, column=0)
         try:
@@ -159,7 +175,7 @@ class VisuWindow(PopupWindow):
         if numberofpngs == -1:  # Bug fix (slider starting at -1 if no image found)
             numberofpngs = 0
         self.slider = Scale(self, from_=0, to=numberofpngs-1, length=self.winfo_reqwidth(), command=self.OnSliderChange, orient=HORIZONTAL)
-        ObjectCollection.slider_collection['Visu_Scale1'] = self.slider
+        ObjectCollection.sliders['Visu_Scale1'] = self.slider
         self.slider.grid(row=1, column=0)
         print("Widgets initialized")
 
@@ -167,7 +183,8 @@ class VisuWindow(PopupWindow):
     
 
     def OnSliderChange(self,num):
-        
+        for canvas in self.canvaslist:
+            pass
         pass
 
 
@@ -193,11 +210,11 @@ def AfterCallback():
         value = scan_queue.get(block=False)
     except queue.Empty:
         print("Queue Empty")
-        ObjectCollection.window_collection['Visu'].after(1000, AfterCallback)
+        ObjectCollection.windows['Visu'].after(1000, AfterCallback)
         return
     if value:
         SliderUpdate()
-    ObjectCollection.window_collection['Visu'].after(1000, AfterCallback)
+    ObjectCollection.windows['Visu'].after(1000, AfterCallback)
 def ThreadTarget():
     previousScan = 0
     try:
@@ -227,22 +244,43 @@ def NameFormat(num):  # process le format du nom dans le fichier json pour rempl
     return nom
 # DATA PROCESSING ---------------------------------------------------------------------------------
 # GUI INTERACTION ---------------------------------------------------------------------------------
-
 def SliderUpdate(msg=""):  # Updates the slider 
     if msg != "":
         print(msg)
     Dm.svg_to_png(path=img_folder_path)
     numberofpngs = Dm.getnumberofpng(path=img_folder_path, reg=pngregex)
-    ObjectCollection.slider_collection['Visu_Scale1'].configure(to=numberofpngs-1)
+    ObjectCollection.sliders['Visu_Scale1'].configure(to=numberofpngs-1)
 # GUI INTERACTION ---------------------------------------------------------------------------------
 # MAIN --------------------------------------------------------------------------------------------
+
+def CreateVisuModels():
+    #Creation of Visualization mode objects
+    i = 0
+    for key,value in config["Visualizations"].items():
+        print("key---------------",key)
+        VisualisationMode(key,value)
+        i += 1
+        
+    print("created",i,"visualization models ")
+
+colors = ["blue","green","red","yellow"]
+Dm = DataManagement()
+config = json.load(open("config.json"))  # loads config.json
+scan_queue = queue.Queue()  # Initializes the queue used for the scanning of the folder
+img_folder_path = os.path.realpath(__file__).replace(os.path.basename(__file__), config["base"]["Image_folder_name"])
+pngregex = StringManipulation().createregex(config["base"]["Name_format"])+config["base"]["Image_format"]  # Creates the regex to validate the files
+if not os.path.exists(img_folder_path):
+    print("Didn't find", config["base"]["Image_folder_name"], "creating...")
+    os.makedirs(config["base"]["Image_folder_name"])
+
+CreateVisuModels()
 
 if __name__ == "__main__":
     window_min_width = "500"    #16/9
     window_min_height = "281"   #
 
     main_window = Tk()
-    ObjectCollection.window_collection['Main'] = main_window
+    ObjectCollection.windows['Main'] = main_window
     main_window.minsize(width=window_min_width, height=window_min_height)
 
     # WIDGET INITIALIZATION------------------------------------------------------------------------
