@@ -1,20 +1,25 @@
 {
+    "base":{
+        "Image_folder_name": "Images/",
+        "Name_format": "snapshot$$$$$$$$",
+        "Image_format": ".png"
+    },
     "Visualizations":
     {
-        "1": [
-            {"Image_folder_name": "Images/"},
-            {"Name_format": "snapshot$$$$$$$$"},
-            {"Image_format": ".png"}
-        ],
-        "2": [
-            {"Image_folder_name": "Images/"},
-            {"Name_format": "snapshot$$$$$$$$"},
-            {"Image_format": ".png"}
-        ],
-        "3": [
-            {"Image_folder_name": "Images/"},
-            {"Name_format": "snapshot$$$$$$$$"},
-            {"Image_format": ".png"}
-        ]
+        "1": {
+            "Image_folder_name": "Images/",
+            "Name_format": "snapshot$$$$$$$$",
+            "Image_format": ".png"
+        },
+        "2": {
+            "Image_folder_name": "Images/",
+            "Name_format": "snapshot$$$$$$$$",
+            "Image_format": ".png"
+        },
+        "3": {
+            "Image_folder_name": "Images/",
+            "Name_format": "snapshot$$$$$$$$",
+            "Image_format": ".png"
+        }
     }
 }

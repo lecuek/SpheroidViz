@@ -13,12 +13,12 @@ import logging
 Dm = DataManagement()
 config = json.load(open("config.json"))  # loads config.json
 scan_queue = queue.Queue()  # Initializes the queue used for the scanning of the folder
-#img_folder_path = os.path.realpath(__file__).replace(os.path.basename(__file__), config["Image_folder_name"])
-#pngregex = StringManipulation().createregex(config["Name_format"])+config["Image_format"]  # Creates the regex to validate the files
+img_folder_path = os.path.realpath(__file__).replace(os.path.basename(__file__), config["base"]["Image_folder_name"])
+pngregex = StringManipulation().createregex(config["base"]["Name_format"])+config["base"]["Image_format"]  # Creates the regex to validate the files
 
-#if not os.path.exists(img_folder_path):
-#    print("Didn't find", config["Image_folder_name"], "creating...")
-#    os.makedirs(config["Image_folder_name"])
+if not os.path.exists(img_folder_path):
+    print("Didn't find", config["base"]["Image_folder_name"], "creating...")
+    os.makedirs(config["base"]["Image_folder_name"])
 
 class PopupWindow(Toplevel):  # Window class that works like a popup
     def __init__(self, keyname="", *args, **kwargs):
@@ -44,10 +44,13 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             keyname = "Visu_Canvas"+str(len(ObjectCollection.canvas_collection))
         ObjectCollection.canvas_collection[keyname] = self
         self.bind("<Button-1>", self.changemode)
+
+
     def changemode(self, event):
         result = ModeSelectionPopup(self).getchoice()
         print("result:",result)
         
+
     def ChangeImage(self): # Changes the image every slider step
         nom = NameFormat(ObjectCollection.slider_collection['Visu_Scale1'].get())
         try:
@@ -74,9 +77,18 @@ class ModeSelectionPopup(object):
         # Listbox1
         self.lb = Listbox(self.toplevel, selectmode=SINGLE)
         numberofvis = config["Visualizations"]
+
+        # Sorts the selection
+        self.vislist = []
         for params in numberofvis:
             for i,key in enumerate(params):
-                self.lb.insert(i,key)
+                self.vislist.append([i,key])
+                #self.lb.insert(i,key)
+        self.vislist.sort(reverse=True)
+        # 
+        # Inserts in listbox
+        for i in self.vislist:
+            self.lb.insert(i[0],i[1])
         self.lb.bind("<<ListboxSelect>>", self.onlistboxchange)
         self.lb.grid(row=1, column=0)
 
@@ -86,12 +98,16 @@ class ModeSelectionPopup(object):
         self.toplevel.update_idletasks()
         self.toplevel.grab_set()
         # WIDGETS INIT -----------------------------------------
-    def onlistboxchange(self, event):
+
+
+    def onlistboxchange(self, event):  # When the user selects an option
         w = event.widget
         index = int(w.curselection()[0])
         self.selection = w.get(index)
         print(self.selection)
-    def getchoice(self):
+
+
+    def getchoice(self):  # Returns the selected option
         self.toplevel.wait_window()
         return self.selection
 
@@ -150,7 +166,7 @@ class VisuWindow(PopupWindow):
         # WIDGET INITIALIZATION------------------------------------------------------------------------
     
 
-    def OnSliderChange(self):
+    def OnSliderChange(self,num):
         
         pass
 
@@ -197,7 +213,7 @@ def ThreadTarget():
 # For Threading -----------------------------------------------------------------------------------
 # DATA PROCESSING ---------------------------------------------------------------------------------
 def NameFormat(num):  # process le format du nom dans le fichier json pour remplacer les $
-    nom = str(config["Name_format"])
+    nom = str(config["base"]["Name_format"])
     compt = 0
     for i in nom:
         if i == '$':
@@ -207,7 +223,7 @@ def NameFormat(num):  # process le format du nom dans le fichier json pour rempl
     nbzero = ""
     for i in range(compt):
         nbzero += "0"
-    nom += nbzero+str(num)+config["Image_format"]
+    nom += nbzero+str(num)+config["base"]["Image_format"]
     return nom
 # DATA PROCESSING ---------------------------------------------------------------------------------
 # GUI INTERACTION ---------------------------------------------------------------------------------
