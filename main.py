@@ -188,7 +188,7 @@ class VisuWindow(PopupWindow):
         print("Creating Canvas(es)")
         frame = Frame(self)
         frame.grid(row=0, column=0)
-        try:
+        try:  # try,except to catch any wrongly written size
             dim = re.split(r"x|X", modelgrid)  # Simple regex to process wanted modelgrid
             i = int(dim[0])
             j = int(dim[1])
@@ -197,22 +197,27 @@ class VisuWindow(PopupWindow):
             print(e,modelgrid)
             print("Error, couldn't get model grid size exiting window")
             self.destroy()
+        
+        # Creates the canvases and adds the corresponding visualization models to it
+        # list made to order the apparition of the canvases
         modellist = []
-        for v in Oc.visualization_modes.values():
-            modellist.append(v)
+        for key in Oc.visualization_modes.keys():
+            modellist.append(key)
+        modellist.sort()
+
         for row in range(i):
             for col in range(j):
                 if(k > len(modellist)-1):
                     print("Can't create new canvas: not enough models to choose from")
                     break
-                print(Oc.visualization_modes)
                 
                 c = VisualizationCanvas(
                     "Visu_Canvas"+str(k),
                     master=frame,
                     borderwidth=1,
-                    model=modellist[k]
+                    model=Oc.visualization_modes[modellist[k]]
                 )
+
                 c.grid(row=row, column=col)
                 self.ownedcanvas.append(c)
                 k+=1
@@ -220,13 +225,15 @@ class VisuWindow(PopupWindow):
         # WIDGET INITIALIZATION------------------------------------------------------------------------
     
 
-    def OnSliderChange(self,num):
+    def OnSliderChange(self,num):  # When the slider step changes should load the corresponding visualization model
+        # Idea on how to do it: 
+        # Create a method on the Canvas to load the image with the model's image_folder_name etc and the method NameFormat 
         for canvas in self.canvaslist:
             pass
         pass
 
 
-    def Visu_Window(self): 
+    def Visu_Window(self):  # Will decide later if i put this in __init__
         print("Visu_Window")
         
         thread = threading.Thread(target=ThreadTarget)
@@ -242,18 +249,22 @@ class VisuWindow(PopupWindow):
             print("Did not find first picture")
         self.after(100, AfterCallback)
 
-# For Threading -----------------------------------------------------------------------------------
-def AfterCallback():
+def AfterCallback(): 
+    # Method calls itself every second to check for instructions in the queue to execute
     try:
         value = scan_queue.get(block=False)
     except queue.Empty:
         print("Queue Empty")
-        Oc.windows['Visu'].after(1000, AfterCallback)
+        Oc.windows['Visu'].after(500, AfterCallback)
         return
-    if value:
+    if value == "UpdateSlider":
         SliderUpdate()
-    Oc.windows['Visu'].after(1000, AfterCallback)
-def ThreadTarget():
+    Oc.windows['Visu'].after(500, AfterCallback)
+# For Threading -----------------------------------------------------------------------------------
+# This part is reserved to actions executed from secondary threads
+def ThreadTarget(): 
+    # Method lists the directory containing the main svg files and launches the conversion
+    # if the directory contains more svg than the previous scan
     previousScan = 0
     try:
         while True:
@@ -261,7 +272,7 @@ def ThreadTarget():
             if scan > previousScan:
                 Dm.svg_to_png(img_folder_path)
             previousScan = scan
-            scan_queue.put(True)
+            scan_queue.put("UpdateSlider")
             time.sleep(1)
     except KeyboardInterrupt:
         print("ThreadTarget Keyboard interrupt")
@@ -304,13 +315,18 @@ def CreateVisuModels():
 colors = ["blue","green","red","yellow","white","black","pink"] #Debug colors
 Dm = DataManagement()
 config = json.load(open("config.json"))  # loads config.json
-scan_queue = queue.Queue()  # Initializes the queue used for the scanning of the folder
+# Initializes the queue used for the scanning of the folder
+scan_queue = queue.Queue()  
+
 img_folder_path = os.path.realpath(__file__).replace(os.path.basename(__file__), config["base"]["Image_folder_name"])
-pngregex = StringManipulation().createregex(config["base"]["Name_format"])+config["base"]["Image_format"]  # Creates the regex to validate the files
+
+# Creates the regex to validate the files
+pngregex = StringManipulation().createregex(config["base"]["Name_format"])+config["base"]["Image_format"]  
 if not os.path.exists(img_folder_path):
     print("Didn't find", config["base"]["Image_folder_name"], "creating...")
     os.makedirs(config["base"]["Image_folder_name"])
 
+# Initializes the visualization models
 CreateVisuModels()
 
 if __name__ == "__main__":
