@@ -26,38 +26,52 @@ class PopupWindow(Toplevel):  # Window class that works like a popup
 
 
 class VisualizationCanvas(Canvas):  # Canvas used for visualization
-    def __init__(self, keyname="", model=None, *args, **kwargs):
+    def __init__(self, keyname="", model=None, size="", *args, **kwargs):
         '''
         :param str keyname: Name in the collection
         :param str size: Size of the canvas ex:("200x200")
         if not specified = Visu_Canvas+lengthofcollection
         '''
         Canvas.__init__(self, *args, **kwargs)
+        
         self.model = model
         if "model" in kwargs:
             self.model = kwargs["model"]
-        if "size" in kwargs:
-            self.size = kwargs["size"]
-        else:
-            self.size = "200x200"
-        j = i = 200
-        if self.size != "":
+
+        if size != "":
             try:
                 # Simple regex to process wanted modelgrid
-                dim = re.split(r"x|X", self.size)
-                i = int(dim[0])
-                j = int(dim[1])
+                dim = re.split(r"x|X", size)
+                self.width = int(dim[0])
+                self.height = int(dim[1])
             except Exception as e:
-                j = i = 200
+                self.width = self.height = 200
                 print("Couldn't process the given size for canvas", e)
                 print("Setting default 200x200px")
-
-        self.configure(width=i, height=j, bg=self.model.color)
+        
+        self.configure(width=self.width, height=self.height, bg=self.model.color)
         if keyname == "":
             keyname = "Visu_Canvas"+str(len(Oc.canvases))
         Oc.canvases[keyname] = self
-        self.bind("<Button-1>", self.changemode)
-        self.grab_set()
+        self.bind("<Button-3>", self.changemode)
+
+    def ChangeImage(self, num):  # Changes the image
+        """
+        param int num: image number in directory 
+        """
+        imagepath = (self.model.image_folder_name
+        + NameFormat(self.model.name_format,num)
+        + self.model.image_format)
+        try: 
+            imgsize = str(self.height)+"x"+str(self.width)
+            image = ImageTk.PhotoImage(
+                master=self, image=Image.open(imagepath).resize((self.width,self.height),Image.ANTIALIAS))
+            
+            self.create_image(0, 0, image=image, anchor="nw")
+            self.image = image
+        except Exception as e:
+            print(e)
+            print(imagepath, "doesn't exist")
 
     def changemode(self, event):
         result = ModeSelectionPopup(self).getchoice()
@@ -85,15 +99,6 @@ class VisualisationMode():
     def getcolor(self):
         return self.color
 
-    def ChangeImage(self):  # Changes the image every slider step
-        nom = NameFormat(Oc.sliders['Visu_Scale1'].get())
-        try:
-            image = ImageTk.PhotoImage(
-                master=masterCanvas, image=Image.open(img_folder_path+nom))
-            Oc.canvases['Visu_Canvas1'].create_image(200, 200, image=image)
-            Oc.canvases['Visu_Canvas1'].image = image
-        except:
-            print(nom, "doesn't exist")
 
 
 class ModeSelectionPopup(object):
@@ -154,18 +159,19 @@ class ModeSelectionPopup(object):
         return self.selection
 
 
-class VisuWindow(PopupWindow):
+class VisuWindow(Toplevel):
 
     def __init__(self, *args, **kwargs):
         print("Creating visualization window")
-        PopupWindow.__init__(self, *args, *kwargs)
-        self.canvaslist = []
+        Toplevel.__init__(self, *args, *kwargs)
         self.title("Visualisation")
         self.window_min_width = "400"
         self.window_min_height = "450"
         self.minsize(self.window_min_width, self.window_min_height)
         self.ownedcanvas = []
         self.initwidgets()
+        self.Visu_Window()
+        Oc.windows["Visu"] = self
 
     def initwidgets(self):
         print("Creating widgets")
@@ -215,6 +221,7 @@ class VisuWindow(PopupWindow):
 
                 c = VisualizationCanvas(
                     "Visu_Canvas"+str(k),
+                    size="400x400",
                     master=frame,
                     borderwidth=1,
                     model=Oc.visualization_modes[modellist[k]]
@@ -230,8 +237,8 @@ class VisuWindow(PopupWindow):
     def OnSliderChange(self, num):
         # Idea on how to do it:
         # Create a method on the Canvas to load the image with the model's image_folder_name etc and the method NameFormat
-        for canvas in self.canvaslist:
-            pass
+        for canvas in self.ownedcanvas:
+            canvas.ChangeImage(self.slider.get())
         pass
 
     def Visu_Window(self):  # Will decide later if i put this in __init__
@@ -241,14 +248,6 @@ class VisuWindow(PopupWindow):
         thread.daemon = True
         Oc.threadings['Thread_Scan1'] = thread
         thread.start()
-
-        try:
-            img = ImageTk.PhotoImage(
-                master=canvas, image=Image.open(img_folder_path+NameFormat(0)))
-            canvas.create_image(200, 200, image=img)
-            canvas.image = img
-        except:
-            print("Did not find first picture")
         self.after(100, AfterCallback)
 
 
@@ -285,8 +284,8 @@ def ThreadTarget():
 # DATA PROCESSING ---------------------------------------------------------------------------------
 
 
-def NameFormat(num):  # process le format du nom dans le fichier json pour remplacer les $
-    nom = str(config["base"]["Name_format"])
+def NameFormat(nameformat,num):  # process le format du nom dans le fichier json pour remplacer les $
+    nom = nameformat
     compt = 0
     for i in nom:
         if i == '$':
@@ -296,7 +295,7 @@ def NameFormat(num):  # process le format du nom dans le fichier json pour rempl
     nbzero = ""
     for i in range(compt):
         nbzero += "0"
-    nom += nbzero+str(num)+config["base"]["Image_format"]
+    nom += nbzero+str(num)
     return nom
 # DATA PROCESSING ---------------------------------------------------------------------------------
 # GUI INTERACTION ---------------------------------------------------------------------------------
