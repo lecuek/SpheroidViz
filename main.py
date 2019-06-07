@@ -33,7 +33,7 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         if not specified = Visu_Canvas+lengthofcollection
         '''
         Canvas.__init__(self, *args, **kwargs)
-        
+        self.currentimgnum = 0
         self.model = model
         if "model" in kwargs:
             self.model = kwargs["model"]
@@ -59,6 +59,7 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         """
         param int num: image number in directory 
         """
+        self.currentimgnum = num
         imagepath = (self.model.image_folder_name
         + NameFormat(self.model.name_format,num)
         + self.model.image_format)
@@ -66,7 +67,6 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             imgsize = str(self.height)+"x"+str(self.width)
             image = ImageTk.PhotoImage(
                 master=self, image=Image.open(imagepath).resize((self.width,self.height),Image.ANTIALIAS))
-            
             self.create_image(0, 0, image=image, anchor="nw")
             self.image = image
         except Exception as e:
@@ -74,10 +74,11 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             print(imagepath, "doesn't exist")
 
     def changemode(self, event):
+        # Change visualization mode
         result = ModeSelectionPopup(self).getchoice()
         if result != "":
-            self.configure(background=Oc.visualization_modes[result].color)
-            # Change visualization mode
+            self.model = Oc.visualization_modes[result]
+            self.ChangeImage(self.currentimgnum)
         else:
             print("Canceled")
 
@@ -172,6 +173,7 @@ class VisuWindow(Toplevel):
         self.initwidgets()
         self.Visu_Window()
         Oc.windows["Visu"] = self
+        self.grab_set()
 
     def initwidgets(self):
         print("Creating widgets")
@@ -191,7 +193,7 @@ class VisuWindow(Toplevel):
         self.mainframe.grid(row=0, column=0)
         print("Widgets created")
 
-    def initmodels(self, modelgrid="3x3"):  # Initializes the visualization canvases
+    def initmodels(self, modelgrid="2x2"):  # Initializes the visualization canvases
         print("Creating Canvas(es)")
         frame = Frame(self)
         frame.grid(row=0, column=0)
@@ -221,7 +223,7 @@ class VisuWindow(Toplevel):
 
                 c = VisualizationCanvas(
                     "Visu_Canvas"+str(k),
-                    size="400x400",
+                    size="200x200",
                     master=frame,
                     borderwidth=1,
                     model=Oc.visualization_modes[modellist[k]]
@@ -283,7 +285,6 @@ def ThreadTarget():
 # For Threading -----------------------------------------------------------------------------------
 # DATA PROCESSING ---------------------------------------------------------------------------------
 
-
 def NameFormat(nameformat,num):  # process le format du nom dans le fichier json pour remplacer les $
     nom = nameformat
     compt = 0
@@ -297,6 +298,7 @@ def NameFormat(nameformat,num):  # process le format du nom dans le fichier json
         nbzero += "0"
     nom += nbzero+str(num)
     return nom
+
 # DATA PROCESSING ---------------------------------------------------------------------------------
 # GUI INTERACTION ---------------------------------------------------------------------------------
 
