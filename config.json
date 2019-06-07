@@ -10,8 +10,8 @@
         "1": {
             "color": "red",
             "Name": "test",
-            "Image_folder_name": "Images/",
-            "Name_format": "snapshot$$$$$$$$",
+            "Image_folder_name": "autre/",
+            "Name_format": "vs$",
             "Image_format": ".png"
         },
         "2": {
