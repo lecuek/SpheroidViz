@@ -5,3 +5,4 @@ class ObjectCollection:
     threadings = {}
     button_collection = {}
     visualization_modes = {}
+    
