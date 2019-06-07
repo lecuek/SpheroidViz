@@ -7,37 +7,16 @@
     },
     "Visualizations":
     {
-        "Test1": {
+        "1": {
             "color": "red",
-            "Name": "Test1",
+            "Name": "test",
             "Image_folder_name": "Images/",
             "Name_format": "snapshot$$$$$$$$",
             "Image_format": ".png"
         },
-        "Test2": {
+        "2": {
             "color": "green",
-            "Name": "Test2",
-            "Image_folder_name": "Images/",
-            "Name_format": "snapshot$$$$$$$$",
-            "Image_format": ".png"
-        },
-        "Test3": {
-            "color": "blue",
-            "Name": "Test3",
-            "Image_folder_name": "Images/",
-            "Name_format": "snapshot$$$$$$$$",
-            "Image_format": ".png"
-        },
-        "Test4": {
-            "color": "white",
-            "Name": "Test4",
-            "Image_folder_name": "Images/",
-            "Name_format": "snapshot$$$$$$$$",
-            "Image_format": ".png"
-        },
-        "Test5": {
-            "color": "purple",
-            "Name": "Test5",
+            "Name": "test1",
             "Image_folder_name": "Images/",
             "Name_format": "snapshot$$$$$$$$",
             "Image_format": ".png"
