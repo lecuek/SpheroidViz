@@ -10,16 +10,16 @@
         "1": {
             "color": "red",
             "Name": "test",
-            "Image_folder_name": "autre/",
-            "Name_format": "vs$",
+            "Image_folder_name": "Images/Visu1/",
+            "Name_format": "oct$",
             "Image_format": ".png"
         },
         "2": {
             "color": "green",
             "Name": "test1",
-            "Image_folder_name": "Images/",
-            "Name_format": "snapshot$$$$$$$$",
-            "Image_format": ".png"
+            "Image_folder_name": "Images/Visu2/",
+            "Name_format": "pent$",
+            "Image_format": ".jpg"
         }
     }
 }

@@ -29,8 +29,8 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
     def __init__(self, keyname="", model=None, size="", *args, **kwargs):
         '''
         :param str keyname: Name in the collection
-        :param str size: Size of the canvas ex:("200x200")
         if not specified = Visu_Canvas+lengthofcollection
+        :param str size: Size of the canvas ex:("200x200")
         '''
         Canvas.__init__(self, *args, **kwargs)
         self.currentimgnum = 0
@@ -84,14 +84,14 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
 
 
 class VisualisationMode():
-    def __init__(self, key, value):
+    def __init__(self, key, values):
 
-        self.name = value["Name"]
-        self.image_folder_name = value["Image_folder_name"]
-        self.name_format = value["Name_format"]
-        self.image_format = value["Image_format"]
-        self.color = value["color"]
-        self.isShowed = True
+        self.name = values["Name"]
+        self.image_folder_name = values["Image_folder_name"]
+        self.name_format = values["Name_format"]
+        self.image_format = values["Image_format"]
+        self.color = values["color"]
+        self.isShown = True
         Oc.visualization_modes[self.name] = self
 
     def __str__(self):
@@ -150,7 +150,7 @@ class ModeSelectionPopup(object):
         self.selection = ""
         self.toplevel.destroy()
 
-    def onlistboxchange(self, event):  # When the user selects an option
+    def onlistboxchange(self, event):  # Whenever the user selects an option
         w = event.widget
         index = int(w.curselection()[0])
         self.selection = w.get(index)
@@ -246,8 +246,7 @@ class VisuWindow(Toplevel):
     def Visu_Window(self):  # Will decide later if i put this in __init__
         print("Visu_Window")
 
-        thread = threading.Thread(target=ThreadTarget)
-        thread.daemon = True
+        thread = threading.Thread(target=ThreadTarget, daemon=True)
         Oc.threadings['Thread_Scan1'] = thread
         thread.start()
         self.after(100, AfterCallback)
@@ -258,7 +257,6 @@ def AfterCallback():
     try:
         value = scan_queue.get(block=False)
     except queue.Empty:
-        print("Queue Empty")
         Oc.windows['Visu'].after(500, AfterCallback)
         return
     if value == "UpdateSlider":
@@ -312,7 +310,6 @@ def SliderUpdate(msg=""):  # Updates the slider
 # GUI INTERACTION ---------------------------------------------------------------------------------
 
 # MAIN --------------------------------------------------------------------------------------------
-
 
 def CreateVisuModels():
     # Creation of Visualization mode objects
