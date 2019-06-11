@@ -171,11 +171,11 @@ class VisuWindow(Toplevel):
         self.cb_checked = BooleanVar()
         self.cb_checked.set(False)
         self.ownedcanvas = []
+        self.askedstop = False
         self.initwidgets()
         self.Visu_Window()
         Oc.windows["Visu"] = self  # NAMING VISU WINDOW
         self.grab_set()
-
 
     def initwidgets(self):
         print("Creating widgets")
@@ -183,45 +183,16 @@ class VisuWindow(Toplevel):
 
         # WIDGET INITIALIZATION------------------------------------------------------------------------
         self.initmodels()
-        
-        
-        self.rightframe = Frame(self)
-        self.rightframe.grid(row=0, column=1)
-        
-        # CHECKBOX (Keep slider at last index)
-        self.toend_checkbox = Checkbutton(
-            self.rightframe,
-            variable=self.cb_checked,
-            onvalue=True,
-            offvalue=False,
-            text="Keep slider at end",
-            command=SliderUpdate
-        )
-        self.toend_checkbox.grid(row=0, column=0)
-
-        # SCALE
-        self.update()  # Update to be able to get the window size
-        numberofpngs = Dm.getnumberofpng(img_folder_path, pngregex)
-        
-        # Bug fix (slider starting at -1 if no image found)
-        if numberofpngs == -1:
-            numberofpngs = 1
-        self.slider = Scale(
-            self,
-            from_=0,
-            to=numberofpngs-1,
-            length=self.winfo_reqwidth(),
-            command=self.OnSliderChange,
-            orient=HORIZONTAL
-        )
-        Oc.sliders['Visu_Scale1'] = self.slider  # NAMING SLIDER (for easy ctrl+f search)
-
-        self.slider.grid(row=1, column=0)
+        self.initplaystop()
+        self.initrest()
         self.mainframe.grid(row=0, column=0)
         # WIDGET INITIALIZATION------------------------------------------------------------------------
         print("Widgets created")
+    
+    # WIDGET INITIALIZATION------------------------------------------------------------------------
 
     def initmodels(self, modelgrid="2x2"):  # Initializes the visualization canvases
+        # CANVAS INITIALIZATION------------------------------------------------------------------------
         print("Creating Canvas(es)")
         frame = Frame(self)
         frame.grid(row=0, column=0)
@@ -260,11 +231,116 @@ class VisuWindow(Toplevel):
                 c.grid(row=row, column=col)
                 self.ownedcanvas.append(c)
                 k += 1
+        # CANVAS INITIALIZATION------------------------------------------------------------------------
         print("Created Canvas(es)")
-        # WIDGET INITIALIZATION------------------------------------------------------------------------
+    def initplaystop(self):
+        self.playframe = Frame(self)
+        self.playframe.grid(row=3, column=0)
+
+        self.playbutton = Button(self.playframe, text="Play", command=self.play_anim)
+        self.playbutton.grid(row=0, column=0)
+        Oc.button_collection.add(self.playbutton)
+
+        self.textfrom = Label(self.playframe, text=" From:")
+        self.textfrom.grid(row=0, column=1)
+        
+        self.entryfrom_text = StringVar()
+        self.entryfrom = Entry(
+            self.playframe,
+            textvariable=self.entryfrom_text
+        )
+        self.entryfrom.grid(row=0, column=2)
+
+        self.textto = Label(self.playframe, text=" To:")
+        self.textto.grid(row=0, column=3)
+
+        self.entryto_text = StringVar()
+        self.entryto = Entry(
+            self.playframe,
+            textvariable=self.entryto_text
+        )
+        self.entryto.grid(row=0, column=4)
+
+        self.stopbutton = Button(self.playframe, text="Stop", command=self.stop_anim)
+        self.stopbutton.grid(row=1)
+        Oc.button_collection.add(self.stopbutton)
+
+    def initrest(self):
+        self.rightframe = Frame(self)
+        self.rightframe.grid(row=0, column=1)
+
+         # CHECKBOX (Keep slider at last index)
+        self.toend_checkbox = Checkbutton(
+            self.rightframe,
+            variable=self.cb_checked,
+            onvalue=True,
+            offvalue=False,
+            text="Keep slider at end",
+            command=SliderUpdate
+        )
+        Oc.checkboxes["Visu_Checkbox"+str(len(Oc.checkboxes))] = self.toend_checkbox
+        self.toend_checkbox.grid(row=0, column=0)
+
+        # SCALE
+        self.update()  # Update to be able to get the window size
+        numberofpngs = Dm.getnumberofpng(img_folder_path, pngregex)
+        
+        if numberofpngs == -1:  # Bug fix (slider starting at -1 if no image found)
+            numberofpngs = 1
+        self.slider = Scale(
+            self,
+            from_=0,
+            to=numberofpngs-1,
+            length=self.winfo_reqwidth(),
+            command=self.OnSliderChange,
+            orient=HORIZONTAL
+        )
+        Oc.sliders['Visu_Scale1'] = self.slider  # NAMING SLIDER (for easy ctrl+f search)
+
+        self.slider.grid(row=1, column=0)
+
+    # WIDGET INITIALIZATION------------------------------------------------------------------------
+    def getsliderobject(self):
+        return self.slider
+
     def checkbox_get(self):
         #Gets the state of the checkbox
         return self.cb_checked.get()
+
+    def play_anim(self):
+        # Input verifications
+        self.askedstop = False
+        try:
+            try:
+                self._from = int(self.entryfrom_text.get())
+            except Exception as e:
+                print(e)
+                return
+            try:
+                self._to = int(self.entryto_text.get())
+            except Exception as e:
+                print(e)
+                return
+        except Exception as e:
+            print("Something went wrong\n",e)
+        self.slider.set(self._from)
+        self.slidermax = len(self.slider)
+        self.playsliderpos = self._from
+        self.playdelay = 100
+        self.continue_anim()
+
+    def continue_anim(self):
+        if self.playsliderpos > self._to or self.askedstop or self.playsliderpos > self.slidermax:
+            print("returned")
+            return
+        print(self.playsliderpos)
+        self.slider.set(self.playsliderpos)
+        self.playsliderpos += 1
+        self.after(self.playdelay,self.continue_anim)
+        
+
+    def stop_anim(self):
+        self.askedstop = True
 
     # When the slider step changes should load the corresponding visualization model
     def OnSliderChange(self, num):
