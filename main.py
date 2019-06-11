@@ -83,7 +83,7 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             print("Canceled")
 
 
-class VisualisationMode():
+class VisualisationMode(object):
     def __init__(self, key, values):
 
         self.name = values["Name"]
@@ -99,7 +99,6 @@ class VisualisationMode():
 
     def getcolor(self):
         return self.color
-
 
 
 class ModeSelectionPopup(object):
@@ -169,11 +168,14 @@ class VisuWindow(Toplevel):
         self.window_min_width = "400"
         self.window_min_height = "450"
         self.minsize(self.window_min_width, self.window_min_height)
+        self.cb_checked = BooleanVar()
+        self.cb_checked.set(False)
         self.ownedcanvas = []
         self.initwidgets()
         self.Visu_Window()
-        Oc.windows["Visu"] = self
+        Oc.windows["Visu"] = self  # NAMING VISU WINDOW
         self.grab_set()
+
 
     def initwidgets(self):
         print("Creating widgets")
@@ -181,16 +183,42 @@ class VisuWindow(Toplevel):
 
         # WIDGET INITIALIZATION------------------------------------------------------------------------
         self.initmodels()
-        self.update()  # Affichage de la fenetre pour pouvoir adapter la taille du canvas
+        
+        
+        self.rightframe = Frame(self)
+        self.rightframe.grid(row=0, column=1)
+        
+        # CHECKBOX (Keep slider at last index)
+        self.toend_checkbox = Checkbutton(
+            self.rightframe,
+            variable=self.cb_checked,
+            onvalue=True,
+            offvalue=False,
+            text="Keep slider at end",
+            command=SliderUpdate
+        )
+        self.toend_checkbox.grid(row=0, column=0)
+
+        # SCALE
+        self.update()  # Update to be able to get the window size
         numberofpngs = Dm.getnumberofpng(img_folder_path, pngregex)
+        
         # Bug fix (slider starting at -1 if no image found)
         if numberofpngs == -1:
-            numberofpngs = 0
-        self.slider = Scale(self, from_=0, to=numberofpngs-1, length=self.winfo_reqwidth(),
-                            command=self.OnSliderChange, orient=HORIZONTAL)
-        Oc.sliders['Visu_Scale1'] = self.slider
+            numberofpngs = 1
+        self.slider = Scale(
+            self,
+            from_=0,
+            to=numberofpngs-1,
+            length=self.winfo_reqwidth(),
+            command=self.OnSliderChange,
+            orient=HORIZONTAL
+        )
+        Oc.sliders['Visu_Scale1'] = self.slider  # NAMING SLIDER (for easy ctrl+f search)
+
         self.slider.grid(row=1, column=0)
         self.mainframe.grid(row=0, column=0)
+        # WIDGET INITIALIZATION------------------------------------------------------------------------
         print("Widgets created")
 
     def initmodels(self, modelgrid="2x2"):  # Initializes the visualization canvases
@@ -223,7 +251,7 @@ class VisuWindow(Toplevel):
 
                 c = VisualizationCanvas(
                     "Visu_Canvas"+str(k),
-                    size="200x200",
+                    size=config["config"]["Visualization_size"],
                     master=frame,
                     borderwidth=1,
                     model=Oc.visualization_modes[modellist[k]]
@@ -234,6 +262,9 @@ class VisuWindow(Toplevel):
                 k += 1
         print("Created Canvas(es)")
         # WIDGET INITIALIZATION------------------------------------------------------------------------
+    def checkbox_get(self):
+        #Gets the state of the checkbox
+        return self.cb_checked.get()
 
     # When the slider step changes should load the corresponding visualization model
     def OnSliderChange(self, num):
@@ -241,13 +272,12 @@ class VisuWindow(Toplevel):
         # Create a method on the Canvas to load the image with the model's image_folder_name etc and the method NameFormat
         for canvas in self.ownedcanvas:
             canvas.ChangeImage(self.slider.get())
-        pass
 
     def Visu_Window(self):  # Will decide later if i put this in __init__
         print("Visu_Window")
 
         thread = threading.Thread(target=ThreadTarget, daemon=True)
-        Oc.threadings['Thread_Scan1'] = thread
+        Oc.threadings['Thread_Scan1'] = thread  # NAMING THREAD (ctrl+f s)
         thread.start()
         self.after(100, AfterCallback)
 
@@ -302,11 +332,15 @@ def NameFormat(nameformat,num):  # process le format du nom dans le fichier json
 
 
 def SliderUpdate(msg=""):  # Updates the slider
+    visu_window = Oc.windows["Visu"]
+    slider = Oc.sliders["Visu_Scale1"]
     if msg != "":
         print(msg)
     Dm.svg_to_png(path=img_folder_path)
     numberofpngs = Dm.getnumberofpng(path=img_folder_path, reg=pngregex)
-    Oc.sliders['Visu_Scale1'].configure(to=numberofpngs-1)
+    slider.configure(to=numberofpngs-1)
+    if visu_window.checkbox_get():  # To set at the end if the checkbox is ON
+        slider.set(numberofpngs-1)
 # GUI INTERACTION ---------------------------------------------------------------------------------
 
 # MAIN --------------------------------------------------------------------------------------------
@@ -345,12 +379,16 @@ if __name__ == "__main__":
     window_min_width = "500"  # 16/9
     window_min_height = "281"   #
 
+    window_max_width = "500"   #
+    window_max_height = "281"   #
+
     main_window = Tk()
     main_window.option_readfile("options")
     main_window.grid_columnconfigure(0, weight=1)
     main_window.grid_rowconfigure(0, weight=1)
-    Oc.windows['Main'] = main_window
+    Oc.windows['Main'] = main_window  # NAMING MAIN WINDOW (ctrl+f)
     main_window.minsize(width=window_min_width, height=window_min_height)
+    main_window.maxsize(width=window_max_width, height=window_max_height)
 
     # WIDGET INITIALIZATION------------------------------------------------------------------------
 
