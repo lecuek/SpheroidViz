@@ -1,6 +1,6 @@
 {
     "config":{
-        "Visualization_size":"200x200"
+        "Visualization_size":"500x500"
     },
     "base":{
         "Name": "Test",
@@ -13,15 +13,8 @@
         "1": {
             "color": "red",
             "Name": "test",
-            "Image_folder_name": "Visu1/",
-            "Name_format": "pent$",
-            "Image_format": ".png"
-        },
-        "2": {
-            "color": "green",
-            "Name": "test1",
-            "Image_folder_name": "Visu2/",
-            "Name_format": "oct$$",
+            "Image_folder_name": "Images/",
+            "Name_format": "snapshot$$$$$$$$",
             "Image_format": ".png"
         }
     }
