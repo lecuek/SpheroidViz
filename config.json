@@ -4,18 +4,18 @@
     },
     "base":{
         "Name": "Test",
-        "Image_folder_name": "Images/",
-        "Name_format": "snapshot$$$$$$$$",
-        "Image_format": ".png"
+        "Image_folder_name": "Randomedlol/",
+        "Name_format": "image-$",
+        "Image_format": ".jpg"
     },
     "Visualizations":
     {
         "1": {
             "color": "red",
             "Name": "test",
-            "Image_folder_name": "Images/",
-            "Name_format": "snapshot$$$$$$$$",
-            "Image_format": ".png"
+            "Image_folder_name": "Randomedlol/",
+            "Name_format": "image-$",
+            "Image_format": ".jpg"
         }
     }
 }

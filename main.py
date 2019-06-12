@@ -309,6 +309,10 @@ class VisuWindow(Toplevel):
 
     def play_anim(self):
         # Input verifications
+        if self.cb_checked:
+            self.toend_checkbox.toggle()
+            self.toend_checkbox.configure(state=DISABLED)
+
         self.askedstop = False
         try:
             try:
@@ -324,16 +328,16 @@ class VisuWindow(Toplevel):
         except Exception as e:
             print("Something went wrong\n",e)
         self.slider.set(self._from)
-        self.slidermax = len(self.slider)
+        # Slidermax: to limit the play function to go to the max of the slider
+        # self.slidermax = self.slider // Waiting for answers on Stackoverflow
         self.playsliderpos = self._from
         self.playdelay = 100
         self.continue_anim()
 
     def continue_anim(self):
-        if self.playsliderpos > self._to or self.askedstop or self.playsliderpos > self.slidermax:
-            print("returned")
+        if self.playsliderpos > self._to or self.askedstop:
+            self.toend_checkbox.configure(state=NORMAL)
             return
-        print(self.playsliderpos)
         self.slider.set(self.playsliderpos)
         self.playsliderpos += 1
         self.after(self.playdelay,self.continue_anim)
@@ -350,8 +354,6 @@ class VisuWindow(Toplevel):
             canvas.ChangeImage(self.slider.get())
 
     def Visu_Window(self):  # Will decide later if i put this in __init__
-        print("Visu_Window")
-
         thread = threading.Thread(target=ThreadTarget, daemon=True)
         Oc.threadings['Thread_Scan1'] = thread  # NAMING THREAD (ctrl+f s)
         thread.start()
@@ -425,8 +427,11 @@ def CreateVisuModels():
     # Creation of Visualization mode objects
     i = 0
     for key, value in config["Visualizations"].items():
-        VisualisationMode(key, value)
-        i += 1
+        try:
+            VisualisationMode(key, value)
+            i += 1
+        except:
+            print("Model",key,"could not be created")
 
     print("created", i, "visualization models ")
 
