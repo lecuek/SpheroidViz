@@ -11,7 +11,10 @@ class StringManipulation():
         except:
             print(base,"cannot convert to str stopping...")
             return
-        return base.replace("$", "[\\d]")
+        p = base.replace("$", "[\\d]")+"+"
+        print(p)
+        return p
+
 class DataManagement():
     def svg_to_png(self, path, delete=False,outputheight=200,outputwidth=200):
 

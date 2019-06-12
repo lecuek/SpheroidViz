@@ -260,7 +260,7 @@ class VisuWindow(Toplevel):
             textvariable=self.entryto_text
         )
         self.entryto.grid(row=0, column=4)
-
+        
         self.stopbutton = Button(self.playframe, text="Stop", command=self.stop_anim)
         self.stopbutton.grid(row=1)
         Oc.button_collection.add(self.stopbutton)
@@ -287,7 +287,7 @@ class VisuWindow(Toplevel):
         
         if numberofpngs == -1:  # Bug fix (slider starting at -1 if no image found)
             numberofpngs = 1
-        self.slider = Scale(
+        self.slider = MyScale(
             self,
             from_=0,
             to=numberofpngs-1,
@@ -335,7 +335,8 @@ class VisuWindow(Toplevel):
         self.continue_anim()
 
     def continue_anim(self):
-        if self.playsliderpos > self._to or self.askedstop:
+        if self.playsliderpos > self._to or self.askedstop or self.playsliderpos>self.slider.maximum:
+            print("Stopped")
             self.toend_checkbox.configure(state=NORMAL)
             return
         self.slider.set(self.playsliderpos)
@@ -359,16 +360,24 @@ class VisuWindow(Toplevel):
         thread.start()
         self.after(100, AfterCallback)
 
+class MyScale(Scale):
+    def __init__(self, *args, **kwargs):
+        Scale.__init__(self, *args, **kwargs)
+        try:
+            self.maximum = kwargs["to"]
+        except:
+            self.maximum = 100
 
 def AfterCallback():
-    # Method calls itself every second to check for instructions in the queue to execute
+    # Method calls itself every second to check for instructions in the queue to executer
     try:
         value = scan_queue.get(block=False)
+        value()
     except queue.Empty:
         Oc.windows['Visu'].after(500, AfterCallback)
         return
-    if value == "UpdateSlider":
-        SliderUpdate()
+    """if value == "UpdateSlider":
+        SliderUpdate()"""
     Oc.windows['Visu'].after(500, AfterCallback)
 # For Threading -----------------------------------------------------------------------------------
 # This part is reserved to actions executed from secondary threads
@@ -384,10 +393,12 @@ def ThreadTarget():
             if scan > previousScan:
                 Dm.svg_to_png(img_folder_path)
             previousScan = scan
-            scan_queue.put("UpdateSlider")
+            scan_queue.put(Oc.windows["Visu"].SliderUpdate)
             time.sleep(1)
     except KeyboardInterrupt:
         print("ThreadTarget Keyboard interrupt")
+    except Exception as e:
+        print(e)
 # For Threading -----------------------------------------------------------------------------------
 # DATA PROCESSING ---------------------------------------------------------------------------------
 

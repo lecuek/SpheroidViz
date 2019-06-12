@@ -6,7 +6,7 @@
         "Name": "Test",
         "Image_folder_name": "Randomedlol/",
         "Name_format": "image-$",
-        "Image_format": ".jpg"
+        "Image_format": ".png"
     },
     "Visualizations":
     {
@@ -15,7 +15,14 @@
             "Name": "test",
             "Image_folder_name": "Randomedlol/",
             "Name_format": "image-$",
-            "Image_format": ".jpg"
+            "Image_format": ".png"
+        },
+        "HUUMME": {
+            "color": "blue",
+            "Name": "test2",
+            "Image_folder_name": "Randomed2/",
+            "Name_format": "image-$",
+            "Image_format": ".png"
         }
     }
 }
