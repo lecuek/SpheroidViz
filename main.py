@@ -10,8 +10,13 @@ import json
 import sys
 import logging
 
+print("Starting R, It will take a few seconds")
+import rpy2.robjects as robjects
+import rpy2.robjects.packages as rpackages
+import rpy2.robjects.lib.ggplot2 as ggplot2
 
-class PopupWindow(Toplevel):  # Window class that works like a popup
+
+class PopupWindow(Toplevel):  # Window class that works like a popup (Mostly unused, may remove later)
     def __init__(self, keyname="", *args, **kwargs):
         print("Creating PopupWindow")
         Toplevel.__init__(self, *args, *kwargs)
@@ -34,6 +39,7 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         '''
         Canvas.__init__(self, *args, **kwargs)
         self.currentimgnum = 0
+        self.previouslyownedmodels = {}
         self.model = model
         if "model" in kwargs:
             self.model = kwargs["model"]
@@ -49,63 +55,70 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
                 print("Couldn't process the given size for canvas", e)
                 print("Setting default 200x200px")
         
-        self.configure(width=self.width, height=self.height, bg=self.model.color)
+        self.configure(width=self.width, height=self.height)
         if keyname == "":
             keyname = "Visu_Canvas"+str(len(Oc.canvases))
+        self.name = keyname
+        self.outputpath = config["Canvas_output"]["Output_folder"]+self.name+"/"
+        if not os.path.exists(self.outputpath):
+            os.makedirs(self.outputpath)
         Oc.canvases[keyname] = self
-        self.bind("<Button-3>", self.changemode)
+        self.bind("<Button-3>", self.changemodel)
 
-    def ChangeImage(self, num):  # Changes the image
-        """
-        param int num: image number in directory 
-        """
-        self.currentimgnum = num
-        imagepath = (self.model.image_folder_name
-        + NameFormat(self.model.name_format,num)
-        + self.model.image_format)
+    def ChangeImage(self, imagename):  # Changes the image
+        imagepath = self.outputpath+imagename
         try: 
             imgsize = str(self.height)+"x"+str(self.width)
             image = ImageTk.PhotoImage(
                 master=self, image=Image.open(imagepath).resize((self.width,self.height),Image.ANTIALIAS))
             self.create_image(0, 0, image=image, anchor="nw")
             self.image = image
+            return
         except Exception as e:
             print(e)
             print(imagepath, "doesn't exist")
+        
+    #plotspherattime uptake glucose 0-20
+    #plotspherattime nuclear volume 10-20
+    #plotspherattime uptake glucose 0-20
 
-    def changemode(self, event):
+
+    def changemodel(self, event):
         # Change visualization mode
-        result = ModeSelectionPopup(self).getchoice()
-        if result != "":
-            self.model = Oc.visualization_modes[result]
-            self.ChangeImage(self.currentimgnum)
+        result = ModeSelectionPopup(self).getchoice()  # Gets selected function and param from popup
+        if result != ["",""]:
+            print("RESULT WAAAS NOT NUUUUUULLL")
+            visualization_name = result[0]+"-"+result[1]
+            if visualization_name not in self.previouslyownedmodels.keys():
+                self.model = VisualizationModel(result[0],result[1])
+                self.previouslyownedmodels[visualization_name] = self.model
         else:
             print("Canceled")
 
 
-class VisualisationMode(object):
-    def __init__(self, key, values):
+class VisualizationModel(object):
+    def __init__(self, function, param):
+        """
+        param str function: The function to use from the R Script\n
+        param str param: The parameter to use from the R Script
+        """
+        self.function = function
+        self.param = param
+        self.nameFormat = config["Sortie_principale"]["Name_format"]
+        self.imageExtension = config["Sortie_principale"]["Image_extension"]
+        self.actualModelOut = []
+        self.name = self.function+"-"+self.param
+    
 
-        self.name = values["Name"]
-        self.image_folder_name = values["Image_folder_name"]
-        self.name_format = values["Name_format"]
-        self.image_format = values["Image_format"]
-        self.color = values["color"]
-        self.isShown = True
-        Oc.visualization_modes[self.name] = self
-
-    def __str__(self):
-        return self.name
-
-    def getcolor(self):
-        return self.color
+    def GetFilenameAtStep(self, timeStep):
+        return NameFormat(self.nameFormat, timeStep)+self.imageExtension
 
 
-class ModeSelectionPopup(object):
+class ModeSelectionPopup(object):  # The class used for the popup window when clicking on a Canvas
     def __init__(self, parent):
         self.toplevel = Toplevel(parent)
         self.toplevel.title("Changement de mode")
-        self.selection = ""
+        self.selection = ["",""]
         # WIDGETS INIT -----------------------------------------
 
         # Button Frame
@@ -116,24 +129,10 @@ class ModeSelectionPopup(object):
             self.toplevel, text="Choisissez votre mode de visualisation")
         self.l1.grid(row=0, column=0)
 
-        # Listbox1
-        self.lb = Listbox(self.toplevel, selectmode=SINGLE)
-        numberofvis = Oc.visualization_modes
-
-        # Sorts the selection
-        self.vislist = []
-        for vismod in numberofvis.values():
-            self.vislist.append(str(vismod))
-        self.vislist.sort()
-
-        # Inserts in listbox
-        for i, vis in enumerate(self.vislist):
-            self.lb.insert(i, vis)
-        self.lb.bind("<<ListboxSelect>>", self.onlistboxchange)
-        self.lb.grid(row=1, column=0)
+        self.createlistboxes()
 
         # Ok Button
-        self.b = Button(self.frame, text="Ok", command=self.toplevel.destroy)
+        self.b = Button(self.frame, text="Ok", command=self.onclickok)
         self.b.grid(row=2, column=0)
 
         # Cancel Button
@@ -145,21 +144,44 @@ class ModeSelectionPopup(object):
         self.toplevel.grab_set()
         # WIDGETS INIT -----------------------------------------
 
-    def cancel(self):
-        self.selection = ""
+
+    def createlistboxes(self):  # Pretty self explanatory
+        # Functions Listbox
+        self.functionLb = Listbox(self.toplevel)
+        functions = visuconfig["functions"]
+        functions.sort()
+
+        # Inserts in listbox
+        for i, function in enumerate(functions):
+            self.functionLb.insert(i, function)
+        #self.functionLb.bind("<<ListboxSelect>>", self.onlistbox1change)
+        self.functionLb.grid(row=1, column=0)
+
+        # Params Listbox
+        self.paramsLb = Listbox(self.toplevel)
+        params = visuconfig["params"]
+        
+        for j, param in enumerate(params):
+            self.paramsLb.insert(j, param)
+        # self.paramsLb.bind("<<ListboxSelect>>", self.onlistbox2change)
+        self.paramsLb.grid(row=1, column=1)
+        
+
+    def cancel(self):  # When Cancel is clicked
+        self.selection = ["",""]
         self.toplevel.destroy()
 
-    def onlistboxchange(self, event):  # Whenever the user selects an option
-        w = event.widget
-        index = int(w.curselection()[0])
-        self.selection = w.get(index)
+    def onclickok(self):  # When Ok is clicked
+        self.selection[0] = self.functionLb.get(ACTIVE)
+        self.selection[1] = self.paramsLb.get(ACTIVE)
+        self.toplevel.destroy()
 
     def getchoice(self):  # Returns the selected option
         self.toplevel.wait_window()
         return self.selection
 
 
-class VisuWindow(Toplevel):
+class VisuWindow(Toplevel):  # The visualization window
 
     def __init__(self, *args, **kwargs):
         print("Creating visualization window")
@@ -177,7 +199,7 @@ class VisuWindow(Toplevel):
         Oc.windows["Visu"] = self  # NAMING VISU WINDOW
         self.grab_set()
 
-    def initwidgets(self):
+    def initwidgets(self):  # Initializes widgets
         print("Creating widgets")
         self.mainframe = Frame(self)
 
@@ -189,9 +211,11 @@ class VisuWindow(Toplevel):
         # WIDGET INITIALIZATION------------------------------------------------------------------------
         print("Widgets created")
     
+    def createtructemp(self):  # DEBUG FUNCTION: Creates the popup directly at the visu window init
+        ModeSelectionPopup(self)
     # WIDGET INITIALIZATION------------------------------------------------------------------------
 
-    def initmodels(self, modelgrid="2x2"):  # Initializes the visualization canvases
+    def initmodels(self, modelgrid="1x2"):  # Initializes the visualization canvases
         # CANVAS INITIALIZATION------------------------------------------------------------------------
         print("Creating Canvas(es)")
         frame = Frame(self)
@@ -209,23 +233,18 @@ class VisuWindow(Toplevel):
 
         # Creates the canvases and adds the corresponding visualization models to it
         # list made to order the apparition of the canvases
-        modellist = []
-        for key in Oc.visualization_modes.keys():
-            modellist.append(key)
-        modellist.sort()
+        
 
         for row in range(i):
             for col in range(j):
-                if(k > len(modellist)-1):
+                """if(k > len(modellist)-1):
                     print("Can't create new canvas: not enough models to choose from")
-                    break
-
+                    break"""
                 c = VisualizationCanvas(
                     "Visu_Canvas"+str(k),
                     size=config["config"]["Visualization_size"],
                     master=frame,
-                    borderwidth=1,
-                    model=Oc.visualization_modes[modellist[k]]
+                    borderwidth=1
                 )
 
                 c.grid(row=row, column=col)
@@ -233,7 +252,9 @@ class VisuWindow(Toplevel):
                 k += 1
         # CANVAS INITIALIZATION------------------------------------------------------------------------
         print("Created Canvas(es)")
-    def initplaystop(self):
+    
+    def initplaystop(self):  # Initializes the play/stop functionnality widgets
+
         self.playframe = Frame(self)
         self.playframe.grid(row=3, column=0)
 
@@ -265,7 +286,8 @@ class VisuWindow(Toplevel):
         self.stopbutton.grid(row=1)
         Oc.button_collection.add(self.stopbutton)
 
-    def initrest(self):
+    def initrest(self):  # Initializes the rest of the widgets 
+
         self.rightframe = Frame(self)
         self.rightframe.grid(row=0, column=1)
 
@@ -292,7 +314,7 @@ class VisuWindow(Toplevel):
             from_=0,
             to=numberofpngs-1,
             length=self.winfo_reqwidth(),
-            command=self.OnSliderChange,
+            command=self.OnSliderStep,
             orient=HORIZONTAL
         )
         Oc.sliders['Visu_Scale1'] = self.slider  # NAMING SLIDER (for easy ctrl+f search)
@@ -300,19 +322,19 @@ class VisuWindow(Toplevel):
         self.slider.grid(row=1, column=0)
 
     # WIDGET INITIALIZATION------------------------------------------------------------------------
-    def getsliderobject(self):
+    def getsliderobject(self):# Returns the slider
         return self.slider
 
-    def checkbox_get(self):
-        #Gets the state of the checkbox
+    def checkbox_get(self):  # Gets the state of the checkbox
         return self.cb_checked.get()
 
-    def play_anim(self):
+    def play_anim(self):  # Initializes the animation process
         # Input verifications
-        if self.cb_checked:
+        self.toend_checkbox.configure(state=DISABLED)
+        if self.cb_checked.get():
             self.toend_checkbox.toggle()
-            self.toend_checkbox.configure(state=DISABLED)
-
+            self.cb_checked.set(False)
+        
         self.askedstop = False
         try:
             try:
@@ -327,14 +349,14 @@ class VisuWindow(Toplevel):
                 return
         except Exception as e:
             print("Something went wrong\n",e)
+        # Parameters for the continue_anim method
         self.slider.set(self._from)
-        # Slidermax: to limit the play function to go to the max of the slider
-        # self.slidermax = self.slider // Waiting for answers on Stackoverflow
         self.playsliderpos = self._from
         self.playdelay = 100
         self.continue_anim()
 
-    def continue_anim(self):
+    def continue_anim(self):  # Plays the animation
+        # Calls itself every x miliseconds and pushes the slider
         if self.playsliderpos > self._to or self.askedstop or self.playsliderpos>self.slider.maximum:
             print("Stopped")
             self.toend_checkbox.configure(state=NORMAL)
@@ -345,22 +367,52 @@ class VisuWindow(Toplevel):
         
 
     def stop_anim(self):
+        # Called when clicking stop
         self.askedstop = True
 
+# environment map nuclear volume
+
+
     # When the slider step changes should load the corresponding visualization model
-    def OnSliderChange(self, num):
-        # Idea on how to do it:
-        # Create a method on the Canvas to load the image with the model's image_folder_name etc and the method NameFormat
+    def OnSliderStep(self, num):
+        print("----------------START ONSLIDERSTEP------------------------")
+        start = time.time()
+        num = int(num)
         for canvas in self.ownedcanvas:
-            canvas.ChangeImage(self.slider.get())
+            if canvas.model is not None:
+                filename = canvas.model.GetFilenameAtStep(num)
+                # For every previously owned models of this canvas
+                trigger = False
+                
+                for model in canvas.previouslyownedmodels.values():
+                    print("for model in canvas.previously")
+                    # If the model is not the actual model possessed by the canvas
+                    if model is not canvas.model and filename in model.actualModelOut:
+                        print("if model is not canvas.model and fkdlsfkm")
+                        # Delete the name of the file from the previous outputs of the model
+                        # because it's gonna get replaced
+                        model.actualModelOut.remove(filename)
+                        trigger = True
+                if filename not in canvas.model.actualModelOut:
+                    trigger = True
+                if trigger:
+                    print("TRIGGERED")
+                    r[canvas.model.function](canvas.model.param, num)
+                    r.ggsave(canvas.outputpath+filename)
+                    canvas.model.actualModelOut.append(filename)
+                canvas.ChangeImage(filename)
+        total = time.time()-start
+        print("------------------------END ONSLIDERSTEP-------------------------\n","TOTAL:",total)
 
     def Visu_Window(self):  # Will decide later if i put this in __init__
+        # Initializes the last components
         thread = threading.Thread(target=ThreadTarget, daemon=True)
         Oc.threadings['Thread_Scan1'] = thread  # NAMING THREAD (ctrl+f s)
         thread.start()
         self.after(100, AfterCallback)
 
-class MyScale(Scale):
+
+class MyScale(Scale):  # My Scale class (was created to add a "maximum" value but not really necessary since widget.cget() exists)
     def __init__(self, *args, **kwargs):
         Scale.__init__(self, *args, **kwargs)
         try:
@@ -368,8 +420,8 @@ class MyScale(Scale):
         except:
             self.maximum = 100
 
-def AfterCallback():
-    # Method calls itself every second to check for instructions in the queue to executer
+
+def AfterCallback():  # Method calls itself every second to check for instructions in the queue to execute
     try:
         value = scan_queue.get(block=False)
         value()
@@ -379,11 +431,9 @@ def AfterCallback():
     """if value == "UpdateSlider":
         SliderUpdate()"""
     Oc.windows['Visu'].after(500, AfterCallback)
-# For Threading -----------------------------------------------------------------------------------
-# This part is reserved to actions executed from secondary threads
 
 
-def ThreadTarget():
+def ThreadTarget():  # The Target of the second thread
     # Method lists the directory containing the main svg files and launches the conversion
     # if the directory contains more svg than the previous scan
     previousScan = 0
@@ -393,16 +443,15 @@ def ThreadTarget():
             if scan > previousScan:
                 Dm.svg_to_png(img_folder_path)
             previousScan = scan
-            scan_queue.put(Oc.windows["Visu"].SliderUpdate)
+            scan_queue.put(SliderUpdate)
             time.sleep(1)
     except KeyboardInterrupt:
         print("ThreadTarget Keyboard interrupt")
     except Exception as e:
-        print(e)
-# For Threading -----------------------------------------------------------------------------------
-# DATA PROCESSING ---------------------------------------------------------------------------------
+        print("ddddddddddddddddddddddddd",e)
 
-def NameFormat(nameformat,num):  # process le format du nom dans le fichier json pour remplacer les $
+
+def NameFormat(nameformat,num):  # Processes the Name_Format in config to a complete name ex: test$$$ -> test025 
     nom = nameformat
     compt = 0
     for i in nom:
@@ -416,11 +465,8 @@ def NameFormat(nameformat,num):  # process le format du nom dans le fichier json
     nom += nbzero+str(num)
     return nom
 
-# DATA PROCESSING ---------------------------------------------------------------------------------
-# GUI INTERACTION ---------------------------------------------------------------------------------
 
-
-def SliderUpdate(msg=""):  # Updates the slider
+def SliderUpdate(msg=""):  # Called to update the slider and change it's maximum 
     visu_window = Oc.windows["Visu"]
     slider = Oc.sliders["Visu_Scale1"]
     if msg != "":
@@ -430,58 +476,65 @@ def SliderUpdate(msg=""):  # Updates the slider
     slider.configure(to=numberofpngs-1)
     if visu_window.checkbox_get():  # To set at the end if the checkbox is ON
         slider.set(numberofpngs-1)
-# GUI INTERACTION ---------------------------------------------------------------------------------
-
-# MAIN --------------------------------------------------------------------------------------------
-
-def CreateVisuModels():
-    # Creation of Visualization mode objects
-    i = 0
-    for key, value in config["Visualizations"].items():
-        try:
-            VisualisationMode(key, value)
-            i += 1
-        except:
-            print("Model",key,"could not be created")
-
-    print("created", i, "visualization models ")
 
 
-colors = ["blue", "green", "red", "yellow",
-          "white", "black", "pink"]  # Debug colors
-Dm = DataManagement()
-config = json.load(open("config.json"))  # loads config.json
-# Initializes the queue used for the scanning of the folder
-scan_queue = queue.Queue()
 
-img_folder_path = os.path.realpath(__file__).replace(
-    os.path.basename(__file__), config["base"]["Image_folder_name"])
+def CloseMainWindow(): # Called when closing the main window
+    # Made to avoid R causing errors when closing
+    r["dev.off"]()
+    Oc.windows["Main"].destroy()
 
-# Creates the regex to validate the files
-pngregex = StringManipulation().createregex(
-    config["base"]["Name_format"])+config["base"]["Image_format"]
-if not os.path.exists(img_folder_path):
-    print("Didn't find", config["base"]["Image_folder_name"], "creating...")
-    os.makedirs(config["base"]["Image_folder_name"])
+if __name__ == "__main__":    
 
-# Initializes the visualization models
-CreateVisuModels()
+    # Loads config.json
+    print("Loading config.json...")
+    config = json.load(open("config.json"))  
+    visuconfig = json.load(open("visu.json"))
 
-if __name__ == "__main__":
+    r = robjects.r
+    try:
+        r.source("LiveSimulation.R")
+    except Exception as e:
+        print("Did no find LiveSimulation.R\n", e)
+
+
+    Dm = DataManagement()
+   
+   
+
+    
+    # Initializes the queue used after scanning the folder
+    print("Initializing Queue...")
+    scan_queue = queue.Queue()
+
+    
+    img_folder_path = os.path.realpath(__file__).replace(
+        os.path.basename(__file__), config["Sortie_principale"]["Image_folder_name"])
+
+    
+    # Creates the regex to validate the files
+    pngregex = StringManipulation().createregex(
+        config["Sortie_principale"]["Name_format"])+config["Sortie_principale"]["Image_extension"]
+    if not os.path.exists(img_folder_path):
+        print("Didn't find", config["Sortie_principale"]["Image_folder_name"], "creating...")
+        os.makedirs(config["Sortie_principale"]["Image_folder_name"])
+
+
+    # MAIN WINDOW ---------------------------------------------------------------------------------
+    
     window_min_width = "500"  # 16/9
     window_min_height = "281"   #
 
     window_max_width = "500"   #
     window_max_height = "281"   #
-
     main_window = Tk()
     main_window.option_readfile("options")
     main_window.grid_columnconfigure(0, weight=1)
     main_window.grid_rowconfigure(0, weight=1)
     Oc.windows['Main'] = main_window  # NAMING MAIN WINDOW (ctrl+f)
+    main_window.bind("WM_DELETE_WINDOW", CloseMainWindow)
     main_window.minsize(width=window_min_width, height=window_min_height)
     main_window.maxsize(width=window_max_width, height=window_max_height)
-
     # WIDGET INITIALIZATION------------------------------------------------------------------------
 
     texte = Label(main_window, text="SpheroidViz")
@@ -492,6 +545,8 @@ if __name__ == "__main__":
     bouton.grid(row=1, column=0)
 
     # WIDGET INITIALIZATION------------------------------------------------------------------------
+    
+    # MAIN WINDOW ---------------------------------------------------------------------------------
 
     try:
         main_window.mainloop()
