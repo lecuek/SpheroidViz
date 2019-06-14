@@ -1,28 +1,15 @@
 {
+    "r script source":"LiveSimulation.R",
     "config":{
         "Visualization_size":"500x500"
     },
-    "base":{
+    "Sortie_principale":{
         "Name": "Test",
         "Image_folder_name": "Randomedlol/",
         "Name_format": "image-$",
-        "Image_format": ".png"
+        "Image_extension": ".png"
     },
-    "Visualizations":
-    {
-        "1": {
-            "color": "red",
-            "Name": "test",
-            "Image_folder_name": "Randomedlol/",
-            "Name_format": "image-$",
-            "Image_format": ".png"
-        },
-        "HUUMME": {
-            "color": "blue",
-            "Name": "test2",
-            "Image_folder_name": "Randomed2/",
-            "Name_format": "image-$",
-            "Image_format": ".png"
-        }
+    "Canvas_output":{
+        "Output_folder": "output/"
     }
 }
