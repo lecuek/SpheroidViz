@@ -1,3 +1,10 @@
+"""
+start = time.time()
+end = time.time()
+print("Time of x: " end-start)
+# POUR TESTER LE TEMPS QUE PREND QQCHOSE                
+"""
+
 import time
 from CuekUtils import *
 from object_collections import ObjectCollection as Oc
@@ -31,7 +38,7 @@ class PopupWindow(Toplevel):  # Window class that works like a popup (Mostly unu
 
 
 class VisualizationCanvas(Canvas):  # Canvas used for visualization
-    def __init__(self, keyname="", model=None, size="", *args, **kwargs):
+    def __init__(self, keyname="", model=None, size="", label=None,*args, **kwargs):
         '''
         :param str keyname: Name in the collection
         if not specified = Visu_Canvas+lengthofcollection
@@ -41,6 +48,7 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         self.currentimgnum = 0
         self.previouslyownedmodels = {}
         self.model = model
+        self.label = label
         if "model" in kwargs:
             self.model = kwargs["model"]
 
@@ -68,9 +76,9 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
     def ChangeImage(self, imagename):  # Changes the image
         imagepath = self.outputpath+imagename
         try: 
-            imgsize = str(self.height)+"x"+str(self.width)
+            #imgsize = str(self.height)+"x"+str(self.width)
             image = ImageTk.PhotoImage(
-                master=self, image=Image.open(imagepath).resize((self.width,self.height),Image.ANTIALIAS))
+                master=self, image=Image.open(imagepath))#.resize((self.width,self.height)))
             self.create_image(0, 0, image=image, anchor="nw")
             self.image = image
             return
@@ -87,11 +95,15 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         # Change visualization mode
         result = ModeSelectionPopup(self).getchoice()  # Gets selected function and param from popup
         if result != ["",""]:
-            print("RESULT WAAAS NOT NUUUUUULLL")
             visualization_name = result[0]+"-"+result[1]
             if visualization_name not in self.previouslyownedmodels.keys():
+                print(visualization_name ,"This combination was not created")
                 self.model = VisualizationModel(result[0],result[1])
                 self.previouslyownedmodels[visualization_name] = self.model
+            else:
+                self.model = self.previouslyownedmodels[visualization_name]
+            self.label.config(text=self.model.name)
+            
         else:
             print("Canceled")
 
@@ -186,7 +198,7 @@ class VisuWindow(Toplevel):  # The visualization window
     def __init__(self, *args, **kwargs):
         print("Creating visualization window")
         Toplevel.__init__(self, *args, *kwargs)
-        self.title("Visualisation")
+        self.title("Visualization")
         self.window_min_width = "400"
         self.window_min_height = "450"
         self.minsize(self.window_min_width, self.window_min_height)
@@ -215,7 +227,7 @@ class VisuWindow(Toplevel):  # The visualization window
         ModeSelectionPopup(self)
     # WIDGET INITIALIZATION------------------------------------------------------------------------
 
-    def initmodels(self, modelgrid="1x2"):  # Initializes the visualization canvases
+    def initmodels(self, modelgrid="2x3"):  # Initializes the visualization canvases
         # CANVAS INITIALIZATION------------------------------------------------------------------------
         print("Creating Canvas(es)")
         frame = Frame(self)
@@ -240,15 +252,19 @@ class VisuWindow(Toplevel):  # The visualization window
                 """if(k > len(modellist)-1):
                     print("Can't create new canvas: not enough models to choose from")
                     break"""
+                canvframe = Frame(frame)
+                lab = Label(canvframe, text="None")
+                lab.grid(row=0, column=0)
                 c = VisualizationCanvas(
                     "Visu_Canvas"+str(k),
                     size=config["config"]["Visualization_size"],
-                    master=frame,
-                    borderwidth=1
+                    label=lab,
+                    master=canvframe,
+                    bg="#66ccff"
                 )
-
-                c.grid(row=row, column=col)
+                c.grid(row=1, column=0)
                 self.ownedcanvas.append(c)
+                canvframe.grid(row=row, column=col)
                 k += 1
         # CANVAS INITIALIZATION------------------------------------------------------------------------
         print("Created Canvas(es)")
@@ -375,34 +391,31 @@ class VisuWindow(Toplevel):  # The visualization window
 
     # When the slider step changes should load the corresponding visualization model
     def OnSliderStep(self, num):
-        print("----------------START ONSLIDERSTEP------------------------")
-        start = time.time()
         num = int(num)
         for canvas in self.ownedcanvas:
             if canvas.model is not None:
                 filename = canvas.model.GetFilenameAtStep(num)
                 # For every previously owned models of this canvas
-                trigger = False
-                
+                if filename not in canvas.model.actualModelOut:
+                    r[canvas.model.function](canvas.model.param, num).plot
+                    r.ggsave(
+                        canvas.outputpath+filename,
+                        width=canvas.width/50,
+                        height=canvas.height/50,
+                        dpi=50,
+                        units="in"
+                    )
+                    canvas.model.actualModelOut.append(filename)
+                else:
+                    canvas.ChangeImage(filename)
+                    continue
                 for model in canvas.previouslyownedmodels.values():
-                    print("for model in canvas.previously")
                     # If the model is not the actual model possessed by the canvas
-                    if model is not canvas.model and filename in model.actualModelOut:
-                        print("if model is not canvas.model and fkdlsfkm")
+                    if (model != canvas.model) and (filename in model.actualModelOut):
                         # Delete the name of the file from the previous outputs of the model
                         # because it's gonna get replaced
                         model.actualModelOut.remove(filename)
-                        trigger = True
-                if filename not in canvas.model.actualModelOut:
-                    trigger = True
-                if trigger:
-                    print("TRIGGERED")
-                    r[canvas.model.function](canvas.model.param, num)
-                    r.ggsave(canvas.outputpath+filename)
-                    canvas.model.actualModelOut.append(filename)
                 canvas.ChangeImage(filename)
-        total = time.time()-start
-        print("------------------------END ONSLIDERSTEP-------------------------\n","TOTAL:",total)
 
     def Visu_Window(self):  # Will decide later if i put this in __init__
         # Initializes the last components
@@ -449,6 +462,9 @@ def ThreadTarget():  # The Target of the second thread
         print("ThreadTarget Keyboard interrupt")
     except Exception as e:
         print("ddddddddddddddddddddddddd",e)
+        thread = threading.Thread(target=ThreadTarget, daemon=True)
+        thread.start()
+
 
 
 def NameFormat(nameformat,num):  # Processes the Name_Format in config to a complete name ex: test$$$ -> test025 
@@ -471,7 +487,7 @@ def SliderUpdate(msg=""):  # Called to update the slider and change it's maximum
     slider = Oc.sliders["Visu_Scale1"]
     if msg != "":
         print(msg)
-    Dm.svg_to_png(path=img_folder_path)
+    #Dm.svg_to_png(path=img_folder_path)
     numberofpngs = Dm.getnumberofpng(path=img_folder_path, reg=pngregex)
     slider.configure(to=numberofpngs-1)
     if visu_window.checkbox_get():  # To set at the end if the checkbox is ON
@@ -490,18 +506,13 @@ if __name__ == "__main__":
     print("Loading config.json...")
     config = json.load(open("config.json"))  
     visuconfig = json.load(open("visu.json"))
-
     r = robjects.r
     try:
         r.source("LiveSimulation.R")
     except Exception as e:
         print("Did no find LiveSimulation.R\n", e)
 
-
     Dm = DataManagement()
-   
-   
-
     
     # Initializes the queue used after scanning the folder
     print("Initializing Queue...")
@@ -528,6 +539,7 @@ if __name__ == "__main__":
     window_max_width = "500"   #
     window_max_height = "281"   #
     main_window = Tk()
+    main_window.title("SpheroidViz - Visualization app")
     main_window.option_readfile("options")
     main_window.grid_columnconfigure(0, weight=1)
     main_window.grid_rowconfigure(0, weight=1)
@@ -537,10 +549,10 @@ if __name__ == "__main__":
     main_window.maxsize(width=window_max_width, height=window_max_height)
     # WIDGET INITIALIZATION------------------------------------------------------------------------
 
-    texte = Label(main_window, text="SpheroidViz")
+    texte = Label(main_window, text="SpheroidViz\nCreated by Benjamin.C")
     texte.grid(row=0, column=0)
 
-    bouton = Button(main_window, text="Lancer la visualisation",
+    bouton = Button(main_window, text="Open Visualization Window",
                     command=VisuWindow, background="#b3d9ff")
     bouton.grid(row=1, column=0)
 

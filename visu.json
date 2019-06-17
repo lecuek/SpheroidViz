@@ -38,6 +38,7 @@
         "local_density",
         "overlap",
         "oncoprotein",
+        "oxygen",
         "uptake_glucose",
         "uptake_oxygen",
         "secretion_lactate",
