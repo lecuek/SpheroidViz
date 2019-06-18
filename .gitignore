@@ -127,7 +127,9 @@ dmypy.json
 tests/
 *.jpg/
 *.png
-.png/ 
+.png/
+!selectamode.png
+
 .jpeg/
 .svg/
 Images/
