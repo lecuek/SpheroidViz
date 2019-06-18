@@ -1,14 +1,17 @@
 {
     "r script source":"LiveSimulation.R",
     "config":{
-        "Visualization_size":"500x500"
+        "Visualization_size":"290x290"
     },
-    "Sortie_principale":{
-        "Name": "Test",
-        "Image_folder_name": "Randomedlol/",
-        "Name_format": "image-$",
+    "where the scan will take place to count the number of files ouput by simulation":"comment",
+    "Main_output":{
+        "Name": "Sortie",
+        "Image_folder_name": "output/output_data/",
+        "Name_format": "snapshot$$$$$$$$",
         "Image_extension": ".png"
     },
+
+    "The folder where the files will be output":"Comment",
     "Canvas_output":{
         "Output_folder": "output/"
     }
