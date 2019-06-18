@@ -15,4 +15,5 @@ class ObjectCollection:
     visualization_modes = DictPlus("Mode")
     checkboxes = DictPlus("Checkbox")
     textinputs = DictPlus("TextInput")
+    images = DictPlus("image")
 
