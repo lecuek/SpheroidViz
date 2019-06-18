@@ -1,13 +1,14 @@
 """
 start = time.time()
 end = time.time()
-print("Time of x: " end-start)
+print("Time of x: ", end-start)
 # POUR TESTER LE TEMPS QUE PREND QQCHOSE                
 """
-
+import sys
 import rpy2.robjects.lib.ggplot2 as ggplot2
 import rpy2.robjects.packages as rpackages
 import rpy2.robjects as robjects
+import screeninfo
 import time
 from CuekUtils import *
 from object_collections import ObjectCollection as Oc
@@ -17,7 +18,6 @@ from tkinter import *
 from PIL import Image, ImageTk
 import os
 import json
-import sys
 import logging
 
 print("Starting R, It will take a few seconds")
@@ -46,6 +46,9 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         :param str size: Size of the canvas ex:("200x200")
         '''
         Canvas.__init__(self, *args, **kwargs)
+        for i in range(10):
+            self.grid_columnconfigure(i, weight=1)
+            self.grid_rowconfigure(i, weight=1)
         self.currentimgnum = 0
         self.previouslyownedmodels = {}
         self.showbasemodel = False
@@ -56,7 +59,7 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
 
         if size != "":
             try:
-                # Simple regex to process wanted modelgrid
+                # Simple regex to process wanted canvasgrid
                 dim = re.split(r"x|X", size)
                 self.width = int(dim[0])
                 self.height = int(dim[1])
@@ -237,9 +240,10 @@ class VisuWindow(Toplevel):  # The visualization window
         print("Creating visualization window")
         Toplevel.__init__(self, *args, *kwargs)
         self.title("Visualization")
-        self.window_min_width = "400"
-        self.window_min_height = "450"
-        self.minsize(self.window_min_width, self.window_min_height)
+        self.window_width = ScreenResolution[0]
+        self.window_height = ScreenResolution[1]
+        self.maxsize(self.window_width, self.window_height)
+        #self.resizable = (False,False)
         self.cb_checked = BooleanVar()
         self.cb_checked.set(False)
         self.ownedcanvas = []
@@ -252,28 +256,28 @@ class VisuWindow(Toplevel):  # The visualization window
     def initwidgets(self):  # Initializes widgets
         print("Creating widgets")
         self.mainframe = Frame(self)
-        self.initmodels()
+        self.initcanvas()
         self.initplaystop()
         self.initrest()
-        self.mainframe.grid(row=0, column=0)
+        self.mainframe.grid(row=0, column=0, sticky="NW")
         print("Widgets created")
 
     # DEBUG FUNCTION: Creates the popup directly at the visu window init
     def createtructemp(self):
         ModeSelectionPopup(self)
 
-    def initmodels(self, modelgrid="2x3"):  # Initializes the visualization canvases
+    def initcanvas(self, canvasgrid="2x2"):  # Initializes the visualization canvases
         print("Creating Canvas(es)")
         frame = Frame(self)
         frame.grid(row=0, column=0)
         try:  # try,except to catch any wrongly written size
-            # Simple regex to process wanted modelgrid
-            dim = re.split(r"x|X", modelgrid)
+            # Simple regex to process wanted canvasgrid
+            dim = re.split(r"x|X", canvasgrid)
             i = int(dim[0])
             j = int(dim[1])
             k = 0  # to name the canvas
         except Exception as e:
-            print(e, modelgrid)
+            print(e, canvasgrid)
             print("Error, couldn't get model grid size exiting window")
             self.destroy()
 
@@ -296,6 +300,10 @@ class VisuWindow(Toplevel):  # The visualization window
                     bg="#66ccff"
                 )
                 c.grid(row=1, column=0)
+                noimage = Oc.images["noimage"]
+                c.create_image(0,0,image=noimage,anchor="nw")
+                c.image = noimage
+                c.update()
                 self.ownedcanvas.append(c)
                 canvframe.grid(row=row, column=col)
                 k += 1
@@ -540,6 +548,13 @@ def CloseMainWindow():  # Called when closing the main window
 
 if __name__ == "__main__":
 
+    monitors = screeninfo.get_monitors()
+    
+    global ScreenResolution
+    ScreenResolution = (monitors[0].width,monitors[0].height)
+    
+    print("Screen Resolution is ", ScreenResolution)
+    
     # Loads config.json
     print("Loading config.json...")
     config = json.load(open("config.json"))
@@ -549,7 +564,6 @@ if __name__ == "__main__":
         r.source("LiveSimulation.R")
     except Exception as e:
         print("Did no find LiveSimulation.R\n", e)
-
     Dm = DataManagement()
 
     # Initializes the queue used after scanning the folder
@@ -567,21 +581,23 @@ if __name__ == "__main__":
               ["Image_folder_name"], "creating...")
         os.makedirs(config["Main_output"]["Image_folder_name"])
 
+    
 
-    window_min_width = "500"  # 16/9
-    window_min_height = "281"   #
-
-    window_max_width = "500"   #
-    window_max_height = "281"   #
+    window_width = "500"  # 16/9
+    window_height = "281"   #
+    canvsize = config["config"]["Visualization_size"]
+    canvaswidth = int(canvsize.split("x")[0])
+    canvasheight= int(canvsize.split("x")[1])
     main_window = Tk()
+    Oc.images["noimage"] = ImageTk.PhotoImage(master=main_window,image=Image.open("resources/selectamode.png").resize((canvaswidth,canvasheight)))
     main_window.title("SpheroidViz - Visualization app")
     main_window.option_readfile("options")
     main_window.grid_columnconfigure(0, weight=1)
     main_window.grid_rowconfigure(0, weight=1)
     Oc.windows['Main'] = main_window  # NAMING MAIN WINDOW (ctrl+f)
     main_window.bind("WM_DELETE_WINDOW", CloseMainWindow)
-    main_window.minsize(width=window_min_width, height=window_min_height)
-    main_window.maxsize(width=window_max_width, height=window_max_height)
+    main_window.minsize(width=window_width, height=window_height)
+    main_window.resizable = (False,False)
 
     texte = Label(main_window, text="SpheroidViz\nCreated by Benjamin.C")
     texte.grid(row=0, column=0)
