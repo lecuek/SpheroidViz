@@ -240,8 +240,8 @@ class VisuWindow(Toplevel):  # The visualization window
         print("Creating visualization window")
         Toplevel.__init__(self, *args, *kwargs)
         self.title("Visualization")
-        self.window_width = ScreenResolution[0]
-        self.window_height = ScreenResolution[1]
+        self.window_width   = ScreenResolution[0]
+        self.window_height  = ScreenResolution[1]
         self.maxsize(self.window_width, self.window_height)
         #self.resizable = (False,False)
         self.cb_checked = BooleanVar()
@@ -255,11 +255,16 @@ class VisuWindow(Toplevel):  # The visualization window
 
     def initwidgets(self):  # Initializes widgets
         print("Creating widgets")
-        self.mainframe = Frame(self)
+        self.topframe       = Frame(self)
+        self.bottomframe    = Frame(self)
         self.initcanvas()
         self.initplaystop()
         self.initrest()
-        self.mainframe.grid(row=0, column=0, sticky="NW")
+        self.topframe.grid(row=0, column=0, sticky="NW")
+        self.bottomframe.grid(row=1, column=0, sticky="SW")
+        for i in range(5):
+            self.grid_rowconfigure(i, weight=1)
+            self.grid_columnconfigure(i, weight=1)
         print("Widgets created")
 
     # DEBUG FUNCTION: Creates the popup directly at the visu window init
@@ -268,8 +273,7 @@ class VisuWindow(Toplevel):  # The visualization window
 
     def initcanvas(self, canvasgrid="2x2"):  # Initializes the visualization canvases
         print("Creating Canvas(es)")
-        frame = Frame(self)
-        frame.grid(row=0, column=0)
+        
         try:  # try,except to catch any wrongly written size
             # Simple regex to process wanted canvasgrid
             dim = re.split(r"x|X", canvasgrid)
@@ -289,7 +293,7 @@ class VisuWindow(Toplevel):  # The visualization window
                 """if(k > len(modellist)-1):
                     print("Can't create new canvas: not enough models to choose from")
                     break"""
-                canvframe = Frame(frame)
+                canvframe = Frame(self.topframe)
                 lab = Label(canvframe, text="None")
                 lab.grid(row=0, column=0)
                 c = VisualizationCanvas(
@@ -301,19 +305,19 @@ class VisuWindow(Toplevel):  # The visualization window
                 )
                 c.grid(row=1, column=0)
                 noimage = Oc.images["noimage"]
-                c.create_image(0,0,image=noimage,anchor="nw")
+                c.create_image(0,0,image=noimage, anchor="nw")
                 c.image = noimage
                 c.update()
                 self.ownedcanvas.append(c)
-                canvframe.grid(row=row, column=col)
+                canvframe.grid(row=row, column=col, sticky="NW")
                 k += 1
         # CANVAS INITIALIZATION------------------------------------------------------------------------
         print("Created Canvas(es)")
 
     def initplaystop(self):  # Initializes the play/stop functionnality widgets
 
-        self.playframe = Frame(self)
-        self.playframe.grid(row=3, column=0)
+        self.playframe = Frame(self.bottomframe)
+        self.playframe.grid(row=1, column=0)
 
         self.playbutton = Button(
             self.playframe, text="Play", command=self.play_anim)
@@ -368,7 +372,7 @@ class VisuWindow(Toplevel):  # The visualization window
         if numberofpngs == -1:
             numberofpngs = 1
         self.slider = MyScale(
-            self,
+            self.bottomframe,
             from_=0,
             to=numberofpngs-1,
             length=self.winfo_reqwidth(),
@@ -378,7 +382,7 @@ class VisuWindow(Toplevel):  # The visualization window
         # NAMING SLIDER (for easy ctrl+f search)
         Oc.sliders['Visu_Scale1'] = self.slider
 
-        self.slider.grid(row=1, column=0)
+        self.slider.grid(row=0, column=0, sticky="S")
 
     def getsliderobject(self):  # Returns the slider
         return self.slider
