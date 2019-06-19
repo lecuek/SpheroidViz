@@ -12,7 +12,6 @@ class StringManipulation():
             print(base,"cannot convert to str stopping...")
             return
         p = base.replace("$", "[\\d]")+"+"
-        print(p)
         return p
 
 class DataManagement():
