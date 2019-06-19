@@ -46,9 +46,9 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         :param str size: Size of the canvas ex:("200x200")
         '''
         Canvas.__init__(self, *args, **kwargs)
-        for i in range(10):
-            self.grid_columnconfigure(i, weight=1)
-            self.grid_rowconfigure(i, weight=1)
+        
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
         self.currentimgnum = 0
         self.previouslyownedmodels = {}
         self.showbasemodel = False
@@ -77,7 +77,8 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             os.makedirs(self.outputpath)
         Oc.canvases[keyname] = self
         self.bind("<Button-3>", self.changemodel)
-
+    
+    
     def ChangeImage(self, imagename):  # Changes the image
         if self.showbasemodel:
             imagepath = config["Main_output"]["Image_folder_name"]+imagename
@@ -90,12 +91,10 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             imagepath = self.outputpath+imagename
         try:
             #imgsize = str(self.height)+"x"+str(self.width)
-            start = time.time()
             image = ImageTk.PhotoImage(
                 master=self, image=Image.open(imagepath))
             self.create_image(0, 0, image=image, anchor="nw")
             self.image = image
-            print("Creating image and displaying took:", time.time()-start, "seconds")
             return
         except Exception as e:
             print(e)
@@ -147,7 +146,6 @@ class VisualizationModel(object):
 
     def GetFilenameAtStep(self, timeStep):
         return NameFormat(self.nameFormat, timeStep)+self.imageExtension
-
 
 # The class used for the popup window when clicking on a Canvas
 class ModeSelectionPopup(object):
@@ -239,6 +237,7 @@ class VisuWindow(Toplevel):  # The visualization window
     def __init__(self, *args, **kwargs):
         print("Creating visualization window")
         Toplevel.__init__(self, *args, *kwargs)
+        self.canvasresizestep = 10
         self.title("Visualization")
         self.window_width   = ScreenResolution[0]
         self.window_height  = ScreenResolution[1]
@@ -253,25 +252,57 @@ class VisuWindow(Toplevel):  # The visualization window
         Oc.windows["Visu"] = self  # NAMING VISU WINDOW
         self.grab_set()
 
+    def initresizecanvas(self):
+        frame = Frame(self.bottomframe)
+        frame.grid(row=0, column=6)
+        label = Label(frame, text="Resize Canvases")
+        plusbutton = Button(frame, text="+", command=self.enlargecanvas)
+        minusbutton = Button(frame, text="-", command=self.reducecanvas)
+        label.grid(row=0, column=0)
+        plusbutton.grid(row=1, column=0)
+        minusbutton.grid(row=1, column=1)
+
+    def reducecanvas(self):
+        for canvas in self.ownedcanvas:
+            canvas.config(width=canvas.width-self.canvasresizestep, height=canvas.height-self.canvasresizestep)
+            canvas.width = int(canvas.cget("width"))
+            canvas.height = int(canvas.cget("height"))
+            canvas.update()
+    def enlargecanvas(self):
+        for canvas in self.ownedcanvas:
+            canvas.config(width=canvas.width+self.canvasresizestep, height=canvas.height+self.canvasresizestep)
+            canvas.width = int(canvas.cget("width"))
+            canvas.height = int(canvas.cget("height"))          
+            canvas.update()
+
     def initwidgets(self):  # Initializes widgets
         print("Creating widgets")
         self.topframe       = Frame(self)
         self.bottomframe    = Frame(self)
         self.initcanvas()
         self.initplaystop()
+        self.initresizecanvas()
         self.initrest()
-        self.topframe.grid(row=0, column=0, sticky="NW")
-        self.bottomframe.grid(row=1, column=0, sticky="SW")
-        for i in range(5):
-            self.grid_rowconfigure(i, weight=1)
-            self.grid_columnconfigure(i, weight=1)
+
+        self.grid_columnconfigure(0, weight=1)
+        """self.topframe.grid_rowconfigure(0, weight=1)
+        self.topframe.grid_rowconfigure(1 , weight=1)
+
+        self.bottomframe.grid_rowconfigure(0, weight=1)
+        self.bottomframe.grid_columnconfigure(0, weight=1)"""
+
+        #self.topframe.grid(row=0, column=0, sticky="NW")
+        #self.bottomframe.grid(row=1, column=0, sticky="SW")
+        #self.grid_rowconfigure(0, weight=1)
+        self.topframe.pack(fill=X, anchor=N, expand=YES)
+        self.bottomframe.pack(fill=X, anchor=S, expand=YES)
         print("Widgets created")
 
     # DEBUG FUNCTION: Creates the popup directly at the visu window init
     def createtructemp(self):
         ModeSelectionPopup(self)
 
-    def initcanvas(self, canvasgrid="2x2"):  # Initializes the visualization canvases
+    def initcanvas(self, canvasgrid="2x4"):  # Initializes the visualization canvases
         print("Creating Canvas(es)")
         
         try:  # try,except to catch any wrongly written size
@@ -289,11 +320,14 @@ class VisuWindow(Toplevel):  # The visualization window
         # list made to order the apparition of the canvases
 
         for row in range(i):
+            self.topframe.grid_rowconfigure(i, weight=1)
             for col in range(j):
                 """if(k > len(modellist)-1):
                     print("Can't create new canvas: not enough models to choose from")
                     break"""
                 canvframe = Frame(self.topframe)
+                canvframe.grid_columnconfigure(0, weight=1) 
+                canvframe.grid_rowconfigure(0, weight=1)
                 lab = Label(canvframe, text="None")
                 lab.grid(row=0, column=0)
                 c = VisualizationCanvas(
@@ -301,7 +335,8 @@ class VisuWindow(Toplevel):  # The visualization window
                     size=config["config"]["Visualization_size"],
                     label=lab,
                     master=canvframe,
-                    bg="#66ccff"
+                    bg="#66ccff",
+                    highlightthickness=0
                 )
                 c.grid(row=1, column=0)
                 noimage = Oc.images["noimage"]
@@ -309,6 +344,7 @@ class VisuWindow(Toplevel):  # The visualization window
                 c.image = noimage
                 c.update()
                 self.ownedcanvas.append(c)
+                self.topframe.grid_columnconfigure(col, weight=1)
                 canvframe.grid(row=row, column=col, sticky="NW")
                 k += 1
         # CANVAS INITIALIZATION------------------------------------------------------------------------
@@ -369,7 +405,7 @@ class VisuWindow(Toplevel):  # The visualization window
         numberofpngs = Dm.getnumberofpng(img_folder_path, pngregex)
 
         # Bug fix (slider starting at -1 if no image found)
-        if numberofpngs == -1:
+        if numberofpngs == 0:
             numberofpngs = 1
         self.slider = MyScale(
             self.bottomframe,
@@ -430,8 +466,7 @@ class VisuWindow(Toplevel):  # The visualization window
     def stop_anim(self):
         # Called when clicking stop
         self.askedstop = True
-
-# environment map nuclear volume
+    # environment map nuclear volume
 
     # When the slider step changes should load the corresponding visualization model
 
@@ -508,7 +543,7 @@ def ThreadTarget():  # The Target of the second thread
     except KeyboardInterrupt:
         print("ThreadTarget Keyboard interrupt")
     except Exception as e:
-        print("ddddddddddddddddddddddddd", e)
+        print(e)
         thread = threading.Thread(target=ThreadTarget, daemon=True)
         thread.start()
 
