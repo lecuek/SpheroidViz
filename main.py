@@ -92,12 +92,7 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
                     master=self, image=Image.open(imagepath)
                 )  # .resize((self.width, self.height)))
                 self.model.ratio = imagetk.width()/imagetk.height()
-                """if self.height > self.width:
-                    imagetk = imagetk = ImageTk.PhotoImage(
-                        master=self, image=Image.open(imagepath).resize((self.width, floor(self.width/self.model.ratio)),Image.ANTIALIAS))
-                else:
-                    imagetk = imagetk = ImageTk.PhotoImage(
-                        master=self, image=Image.open(imagepath).resize((floor(self.height/self.model.ratio),self.height),Image.ANTIALIAS))"""
+                
             # Makes the image's size proportionnal to it's creation size
             if self.height > self.width:
                 imagetk = ImageTk.PhotoImage(
@@ -233,7 +228,7 @@ class ModeSelectionPopup(object):
 
     def createlistboxes(self):  # Pretty self explanatory
         # Functions Listbox
-        self.functionLb = Listbox(self.frame)
+        self.functionLb = Listbox(self.frame,exportselection=False)
         functions = visuconfig["functions"]
         functions.sort()
 
@@ -244,7 +239,7 @@ class ModeSelectionPopup(object):
         self.functionLb.grid(row=1, column=0)
 
         # Params Listbox
-        self.paramsLb = Listbox(self.frame)
+        self.paramsLb = Listbox(self.frame,exportselection=False)
         params = visuconfig["params"]
         params.sort()
 
@@ -369,33 +364,45 @@ class VisuWindow(Toplevel):  # The visualization window
         self.playbutton = Button(
             self.playframe, text="Play", command=self.play_anim)
         self.playbutton.grid(row=0, column=0)
+
+        self.stopbutton = Button(
+            self.playframe, text="Stop", command=self.stop_anim)
+        self.stopbutton.grid(row=0, column=1)
+        Oc.button_collection.add(self.stopbutton)
         
         Oc.button_collection.add(self.playbutton)
 
         self.textfrom = Label(self.playframe, text=" From:")
-        self.textfrom.grid(row=0, column=1)
+        self.textfrom.grid(row=0, column=2)
 
         self.entryfrom_text = StringVar()
         self.entryfrom = Entry(
             self.playframe,
             textvariable=self.entryfrom_text
         )
-        self.entryfrom.grid(row=0, column=2)
+        self.entryfrom.grid(row=0, column=3)
 
         self.textto = Label(self.playframe, text=" To:")
-        self.textto.grid(row=0, column=3)
+        self.textto.grid(row=0, column=4)
+        
 
         self.entryto_text = StringVar()
         self.entryto = Entry(
             self.playframe,
             textvariable=self.entryto_text
         )
-        self.entryto.grid(row=0, column=4)
+        self.entryto.grid(row=0, column=5)
 
-        self.stopbutton = Button(
-            self.playframe, text="Stop", command=self.stop_anim)
-        self.stopbutton.grid(row=0, column=5)
-        Oc.button_collection.add(self.stopbutton)
+        self.textspeed = Label(self.playframe, text=" Speed (ms)")
+        self.textspeed.grid(row=0, column=6)
+        self.entryspeed_text = StringVar()
+        self.entryspeed = Entry(
+            self.playframe,
+            textvariable=self.entryspeed_text
+        )
+        self.entryspeed.insert(0,"100")
+        
+        self.entryspeed.grid(row=0, column=7)
 
 
     def initrest(self):  # Initializes the rest of the widgets
@@ -411,7 +418,7 @@ class VisuWindow(Toplevel):  # The visualization window
         )
         Oc.checkboxes["Visu_Checkbox" +
                       str(len(Oc.checkboxes))] = self.toend_checkbox
-        self.toend_checkbox.grid(row=0, column=7)
+        self.toend_checkbox.grid(row=0, column=8)
 
         # SCALE
         self.update()  # Update to be able to get the window size
@@ -448,40 +455,49 @@ class VisuWindow(Toplevel):  # The visualization window
             self.cb_checked.set(False)
 
         self.askedstop = False
-        if self.entryto_text.get() == "":
-            self._to = int(self.slider.cget("to"))
-            print(self._to)
-        if self.entryfrom_text.get() == "":
-            self._from = 0
-        else:
+        _from = self.entryfrom_text.get()
+        to = self.entryto_text.get()
+        speed = self.entryspeed_text.get()
+
+    
+        if _from != "":
             try:
-                try:
-                    self._from = int(self.entryfrom_text.get())
-                except Exception as e:
-                    print(e)
-                    return
-                try:
-                    self._to = int(self.entryto_text.get())
-                except Exception as e:
-                    print(e)
-                    return
+                self._from = int(_from)
             except Exception as e:
-                print("Something went wrong\n", e)
+                print("From:",e)
+                self._from = 0
+        else:
+            self._from = 0
+        if to != "":
+            try:
+                self.to = int(to)
+            except Exception as e:
+                print("To:",e)
+                self.to = 0
+        else:
+            self.to = self.slider.cget("to")
+        if speed != "":
+            try:
+                self.speed = int(speed)
+            except Exception as e:
+                print("Speed:",e)
+                self.speed = 100
+                    
+        
         # Parameters for the continue_anim method
         self.slider.set(self._from)
         self.playsliderpos = self._from
-        self.playdelay = 100
         self.continue_anim()
 
     def continue_anim(self):  # Plays the animation
         # Calls itself every x miliseconds and pushes the slider
-        if self.playsliderpos > self._to or self.askedstop or self.playsliderpos > self.slider.maximum:
+        if self.playsliderpos > self.to or self.askedstop or self.playsliderpos > self.slider.maximum:
             print("Stopped")
             self.toend_checkbox.configure(state=NORMAL)
             return
         self.slider.set(self.playsliderpos)
         self.playsliderpos += 1
-        self.after(self.playdelay, self.continue_anim)
+        self.after(self.speed, self.continue_anim)
 
     def stop_anim(self):
         # Called when clicking stop
@@ -493,9 +509,10 @@ class VisuWindow(Toplevel):  # The visualization window
         for canvas in self.ownedcanvas:
             if canvas.model is not None:
                 filename = canvas.model.GetFilenameAtStep(num)
+                print(filename)
                 # For every previously owned models of this canvas
                 if filename not in canvas.model.actualModelOut:
-                    r[canvas.model.function](canvas.model.param, num).plot
+                    r[canvas.model.function](canvas.model.param, num)
                     r.ggsave(
                         canvas.outputpath+filename,
                         width=10,
@@ -515,7 +532,7 @@ class VisuWindow(Toplevel):  # The visualization window
                         model.actualModelOut.remove(filename)
                 canvas.ChangeImage(filename)
             elif canvas.showbasemodel:
-                canvas.ChangeImage(NameFormat(config["Main_output"]["Name_format"], num)+config["Main_output"]["Image_extension"])
+                canvas.ChangeImage(NameFormat(name_format, num)+image_extension)
 
     def Visu_Window(self):  # Will decide later if i put this in __init__
         # Initializes the last components
@@ -613,10 +630,10 @@ if __name__ == "__main__":
     # Loads config.json
     print("Loading config.json...")
     config = json.load(open("config.json"))
-    visuconfig = json.load(open("visu.json"))
+    visuconfig = config["visu"]
     r = robjects.r
     try:
-        r.source("LiveSimulation.R")
+        r.source(config["r script source"])
     except Exception as e:
         print("Did no find LiveSimulation.R\n", e)
     Dm = DataManagement()
@@ -631,10 +648,10 @@ if __name__ == "__main__":
     # Creates the regex to validate the files
     pngregex = StringManipulation().createregex(
         config["Main_output"]["Name_format"])+config["Main_output"]["Image_extension"]
-    if not os.path.exists(img_folder_path):
+    """if not os.path.exists(img_folder_path):
         print("Didn't find", config["Main_output"]
               ["Image_folder_name"], "creating...")
-        os.makedirs(config["Main_output"]["Image_folder_name"])
+        os.makedirs(config["Main_output"]["Image_folder_name"])"""
 
     
     window_width = "500"  # 16/9
@@ -643,7 +660,9 @@ if __name__ == "__main__":
     canvaswidth = int(canvsize.split("x")[0])
     canvasheight= int(canvsize.split("x")[1])
     main_window = Tk()
-    Oc.images["noimage"] = ImageTk.PhotoImage(master=main_window,image=Image.open("resources/selectamode.png").resize((canvaswidth,canvasheight)))
+    name_format = config["Main_output"]["Name_format"]
+    image_extension = config["Main_output"]["Image_extension"]
+    Oc.images["noimage"] = ImageTk.PhotoImage(master=main_window,image=Image.open("resources/selectamode.png").resize((canvaswidth,canvasheight),Image.ANTIALIAS))
     main_window.title("SpheroidViz - Visualization app")
     main_window.option_readfile("options")
     main_window.grid_columnconfigure(0, weight=1)
