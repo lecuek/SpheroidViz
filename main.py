@@ -1,11 +1,3 @@
-"""
-start = time.time()
-end = time.time()
-print("Time of x: ", end-start)
-# POUR TESTER LE TEMPS QUE PREND QQCHOSE
-# 
-# A CHANGER POUR QUE CA SOIT PLACE DANS UN SOUS DOSSIER             
-"""
 import sys
 import rpy2.robjects.lib.ggplot2 as ggplot2
 import rpy2.robjects.packages as rpackages
@@ -25,9 +17,6 @@ from math import fabs
 import json
 import random
 
-print("Starting R, It will take a few seconds")
-RANDOMcolors = ["blue","black","brown","red","yellow","green","orange","beige","turquoise","pink"]
-
 
 class VisualizationCanvas(Canvas):  # Canvas used for visualization
     def __init__(self, keyname="", model=None, size="", label=None, *args, **kwargs):
@@ -37,7 +26,6 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         :param str size: Size of the canvas ex:("200x200")
         '''
         Canvas.__init__(self, *args, **kwargs)
-        
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
         self.currentimgnum = 0
@@ -112,7 +100,6 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         
         self.width  = int(event.width)
         self.height = int(event.height)
-        print(self.width, self.height)
         if self.model == None:
             # Made so the resize is proportionnal
             if self.height > self.width:
@@ -274,6 +261,10 @@ class VisuWindow(Toplevel):  # The visualization window
 
     def __init__(self, *args, **kwargs):
         print("Creating visualization window")
+        global config
+        global visuconfig
+        config = json.load(open("config.json"))
+        visuconfig = config["visu"]
         Toplevel.__init__(self, *args, *kwargs)
         self.canvasresizestep = 10
         self.title("Visualization")
@@ -292,20 +283,18 @@ class VisuWindow(Toplevel):  # The visualization window
 
 
     def initwidgets(self):  # Initializes widgets
-        print("Creating widgets")
+        print("Creating widgets..")
         self.topframe       = Frame(self)
         self.bottomframe    = Frame(self)
-        self.initcanvas()
+        self.initcanvas(canvasgrid=config["config"]["Canvas_grid"])
         self.initplaystop()
         self.initrest()
         self.topframe.pack(side="top",fill="both", expand=True)
         self.bottomframe.pack(side="bottom", fill="x", expand=False)
-        
-        print("Widgets created")
 
 
     def initcanvas(self, canvasgrid="2x2"):  # Initializes the visualization canvases
-        print("Creating Canvas(es)")
+        print("Creating Canvas(es)..")
         
         try:  # try,except to catch any wrongly written size
             # Simple regex to process wanted canvasgrid
@@ -315,7 +304,6 @@ class VisuWindow(Toplevel):  # The visualization window
             k = 0  # to name the canvas
         except Exception as e:
             print(e, canvasgrid)
-            print("Error, couldn't get model grid size exiting window")
             self.destroy()
 
         # Creates the canvases
@@ -331,7 +319,6 @@ class VisuWindow(Toplevel):  # The visualization window
                 canvframe.grid_columnconfigure(0, weight=1)
                 canvframe.grid_rowconfigure(1, weight=1)
                 canvframe.grid(row=row, column=col, sticky="nsew")
-                #canvframe.configure(bg=random.choice(RANDOMcolors))
                 lab = Label(canvframe, text="None")
                 lab.grid(row=0, column=0)
                 c = VisualizationCanvas(
@@ -350,7 +337,6 @@ class VisuWindow(Toplevel):  # The visualization window
                 self.ownedcanvas.append(c)
                 k += 1
         # CANVAS INITIALIZATION------------------------------------------------------------------------
-        print("Created Canvas(es)")
 
 
 
@@ -492,7 +478,7 @@ class VisuWindow(Toplevel):  # The visualization window
     def continue_anim(self):  # Plays the animation
         # Calls itself every x miliseconds and pushes the slider
         if self.playsliderpos > self.to or self.askedstop or self.playsliderpos > self.slider.maximum:
-            print("Stopped")
+            self.slider.set(self._from)
             self.toend_checkbox.configure(state=NORMAL)
             return
         self.slider.set(self.playsliderpos)
@@ -509,7 +495,6 @@ class VisuWindow(Toplevel):  # The visualization window
         for canvas in self.ownedcanvas:
             if canvas.model is not None:
                 filename = canvas.model.GetFilenameAtStep(num)
-                print(filename)
                 # For every previously owned models of this canvas
                 if filename not in canvas.model.actualModelOut:
                     r[canvas.model.function](canvas.model.param, num)
@@ -608,14 +593,7 @@ def SliderUpdate(msg=""):  # Called to update the slider and change it's maximum
     if visu_window.checkbox_get():  # To set at the end if the checkbox is ON
         slider.set(numberofpngs-1)
 
-
-def CloseMainWindow():  # Called when closing the main window
-    # Made to avoid R causing errors when closing
-    try:
-        r["dev.off"]()
-        Oc.windows["Main"].destroy()
-    except:
-        Oc.windows["Main"].destroy()
+    
 
 
 if __name__ == "__main__":
@@ -629,6 +607,8 @@ if __name__ == "__main__":
     
     # Loads config.json
     print("Loading config.json...")
+    global config
+    global visuconfig
     config = json.load(open("config.json"))
     visuconfig = config["visu"]
     r = robjects.r
@@ -648,14 +628,10 @@ if __name__ == "__main__":
     # Creates the regex to validate the files
     pngregex = StringManipulation().createregex(
         config["Main_output"]["Name_format"])+config["Main_output"]["Image_extension"]
-    """if not os.path.exists(img_folder_path):
-        print("Didn't find", config["Main_output"]
-              ["Image_folder_name"], "creating...")
-        os.makedirs(config["Main_output"]["Image_folder_name"])"""
-
     
     window_width = "500"  # 16/9
     window_height = "281"   #
+    
     canvsize = config["config"]["Visualization_size"]
     canvaswidth = int(canvsize.split("x")[0])
     canvasheight= int(canvsize.split("x")[1])
@@ -668,7 +644,6 @@ if __name__ == "__main__":
     main_window.grid_columnconfigure(0, weight=1)
     main_window.grid_rowconfigure(0, weight=1)
     Oc.windows['Main'] = main_window  # NAMING MAIN WINDOW (ctrl+f)
-    main_window.bind("WM_DELETE_WINDOW", CloseMainWindow)
     main_window.minsize(width=window_width, height=window_height)
     main_window.resizable = (False,False)
 
@@ -678,8 +653,4 @@ if __name__ == "__main__":
     bouton = Button(main_window, text="Open Visualization Window",
                     command=VisuWindow, background="#b3d9ff")
     bouton.grid(row=1, column=0)
-
-    try:
-        main_window.mainloop()
-    except KeyboardInterrupt:
-        print("Mainloop interrupted by keyboard")
+    main_window.mainloop()

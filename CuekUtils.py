@@ -31,8 +31,6 @@ class DataManagement():
                     continue  # Reminder: Continue instead of Break bc it completely kills the loop and stops
                 else:
                     if file.replace(".svg", ".png") not in files:  # If not already converted
-                        print(file.replace(".svg", ".png"), "doesn't exist")
-                        print("converting", file)
                         cairosvg.svg2png(
                             url=str(path+"/"+file), scale=0.5,
                             write_to=str(path+"/"+file).replace("svg", "png")
@@ -57,7 +55,6 @@ class DataManagement():
     def to_png(self): # ??? forgot where i use it but keeping it here jic
         width = heigh = 300
         path = os.path.realpath(__file__).strip("convert.py")
-        print(path)
         files = os.listdir(path)
         i = 0
         for file in files:
