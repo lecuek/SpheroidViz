@@ -35,6 +35,7 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         self.imagepath = "resources/selectamode.png"
         self.model = model
         self.label = label
+        self.baseratio = 1
         if "model" in kwargs:
             self.model = kwargs["model"]
 
@@ -64,12 +65,17 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
     def ChangeImage(self, imagename):  # Changes the image taking the 
         if self.showbasemodel:
             imagepath = self.imagefoldername+imagename
-            imagetk = ImageTk.PhotoImage(
-                master=self, image=Image.open(imagepath).resize((self.width,self.height),Image.ANTIALIAS)
-            )  # .resize((self.width, self.height)))
+            if self.height > self.width:
+                imagetk = ImageTk.PhotoImage(
+                    master=self, image=Image.open(imagepath).resize(( self.width, floor( self.width/self.baseratio) ) )
+                )
+            else:
+                imagetk = ImageTk.PhotoImage(
+                    master=self, image=Image.open(imagepath).resize((floor( self.height/self.baseratio), self.height) )
+                )
             self.create_image(self.width/2, self.height/2, image=imagetk, anchor="center")
             self.image = imagetk
-            self.imagepath = imagename
+            self.imagepath = imagepath
             return
         else:
             imagepath = self.outputpath+imagename
@@ -139,6 +145,14 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
                 self.showbasemodel = True
                 self.model = None
                 self.label.config(text="Base")
+                
+                # To get the dimensions of the base model (must have output the first one obviously)
+                try:
+                    basewidth ,baseheight = Image.open(NameFormat(config["Main_output"]["Name_format"],0)).size
+                    self.baseratio = (basewidth/baseheight)
+                except:
+                    self.baseratio = 1
+                # --
                 return
             self.showbasemodel = False
             visualization_name = result[0]+"-"+result[1]
