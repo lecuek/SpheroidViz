@@ -2,7 +2,8 @@
     "r script source":"LiveSimulation.R",
     "config":{
         "Visualization_size":"290x290",
-        "Canvas_grid":"1x2"
+        "-Base Canvas grid size in the textbox when creating the main window -":"comment",
+        "Canvas_grid":"2x2"
     },
     "where the scan will take place to count the number of files ouput by simulation":"comment",
     "Main_output":{

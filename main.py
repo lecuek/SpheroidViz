@@ -228,6 +228,7 @@ class ModeSelectionPopup(object):
         # WIDGETS INIT -----------------------------------------
 
     def createlistboxes(self):  # Pretty self explanatory
+        """Simply creates the listboxes to select the function and parameter"""
         # Functions Listbox
         self.functionLb = Listbox(self.frame,exportselection=False)
         functions = visuconfig["functions"]
@@ -275,12 +276,13 @@ class VisuWindow(Toplevel):  # The visualization window
 
     def __init__(self, *args, **kwargs):
         print("Creating visualization window")
-        global config
+        """global config
         global visuconfig
         config = json.load(open("config.json"))
-        visuconfig = config["visu"]
+        visuconfig = config["visu"]"""
+        self.canvgridsize = kwargs["canvgridsize"]
+        del kwargs["canvgridsize"]
         Toplevel.__init__(self, *args, *kwargs)
-        self.canvasresizestep = 10
         self.title("Visualization")
         self.window_width   = ScreenResolution[0]
         self.window_height  = ScreenResolution[1]
@@ -300,14 +302,14 @@ class VisuWindow(Toplevel):  # The visualization window
         print("Creating widgets..")
         self.topframe       = Frame(self)
         self.bottomframe    = Frame(self)
-        self.initcanvas(canvasgrid=config["config"]["Canvas_grid"])
+        self.initcanvas(self.canvgridsize)
         self.initplaystop()
         self.initrest()
         self.topframe.pack(side="top",fill="both", expand=True)
         self.bottomframe.pack(side="bottom", fill="x", expand=False)
 
 
-    def initcanvas(self, canvasgrid="2x2"):  # Initializes the visualization canvases
+    def initcanvas(self, canvasgrid):  # Initializes the visualization canvases
         print("Creating Canvas(es)..")
         
         try:  # try,except to catch any wrongly written size
@@ -607,7 +609,63 @@ def SliderUpdate(msg=""):  # Called to update the slider and change it's maximum
     if visu_window.checkbox_get():  # To set at the end if the checkbox is ON
         slider.set(numberofpngs-1)
 
-    
+class MainWindow(Tk):
+    def __init__(self, *args, **kwargs):
+        Tk.__init__(self, *args, *kwargs)
+        window_width = "500"  # 16/9
+        window_height = "281"   #
+        Oc.images["noimage"] = ImageTk.PhotoImage(master=self,image=Image.open("resources/selectamode.png").resize((canvaswidth,canvasheight),Image.ANTIALIAS))
+        self.title("SpheroidViz - Visualization app")
+        self.option_readfile("options")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        Oc.windows['Main'] = self  # NAMING MAIN WINDOW (ctrl+f)
+        self.minsize(width=window_width, height=window_height)
+        self.resizable = (False,False)
+        self.visuwindow = None
+        self.createvisu = True
+
+        self.text = Label(self, text="SpheroidViz\nCreated by Benjamin.C")
+        #self.text.grid(row=0, column=0,sticky="n")
+        self.text.pack(side=BOTTOM, fill=X)
+        self.var_regex = re.compile(r"^[1-9]+x[1-9]+$")
+
+        self.canvasgrid_frame = Frame(self)
+        self.canvasgrid_frame.pack(side=TOP)
+
+        self.bouton = Button(self.canvasgrid_frame, text="Open Visualization Window",
+                        command=self.createvisuwindow, background="#b3d9ff")
+        self.bouton.pack(side=BOTTOM)
+        # The Label 
+        self.canvasgrid_text = Label(self.canvasgrid_frame, text="Enter grid dimensions:")
+        self.canvasgrid_text.pack(side=TOP, fill=Y)
+
+        # The StringVar where there is the input text
+        self.canvasgrid_var = StringVar()
+        self.canvasgrid_var.trace("w",lambda name, index, mode, var=self.canvasgrid_var: self.ontype(var))
+
+        # The input box 
+        self.canvasgrid_entry = Entry(self.canvasgrid_frame, textvariable=self.canvasgrid_var)
+        self.canvasgrid_entry.pack()
+        self.canvasgrid_entry.insert(0, config["config"]["Canvas_grid"])
+        
+
+        
+    def ontype(self,var):
+        salut = self.var_regex.match(var.get())
+        if salut:
+            self.createvisu = True
+            self.canvasgrid_entry.config(bg="green")
+        else:
+            self.createvisu = False
+            self.canvasgrid_entry.config(bg="red")
+            
+    def createvisuwindow(self):
+        if self.createvisu:
+            self.visuwindow = VisuWindow(self, canvgridsize=self.canvasgrid_var.get())
 
 
 if __name__ == "__main__":
@@ -643,28 +701,10 @@ if __name__ == "__main__":
     pngregex = StringManipulation().createregex(
         config["Main_output"]["Name_format"])+config["Main_output"]["Image_extension"]
     
-    window_width = "500"  # 16/9
-    window_height = "281"   #
-    
+    image_extension = config["Main_output"]["Image_extension"]
+    name_format = config["Main_output"]["Name_format"]
     canvsize = config["config"]["Visualization_size"]
     canvaswidth = int(canvsize.split("x")[0])
     canvasheight= int(canvsize.split("x")[1])
-    main_window = Tk()
-    name_format = config["Main_output"]["Name_format"]
-    image_extension = config["Main_output"]["Image_extension"]
-    Oc.images["noimage"] = ImageTk.PhotoImage(master=main_window,image=Image.open("resources/selectamode.png").resize((canvaswidth,canvasheight),Image.ANTIALIAS))
-    main_window.title("SpheroidViz - Visualization app")
-    main_window.option_readfile("options")
-    main_window.grid_columnconfigure(0, weight=1)
-    main_window.grid_rowconfigure(0, weight=1)
-    Oc.windows['Main'] = main_window  # NAMING MAIN WINDOW (ctrl+f)
-    main_window.minsize(width=window_width, height=window_height)
-    main_window.resizable = (False,False)
-
-    texte = Label(main_window, text="SpheroidViz\nCreated by Benjamin.C")
-    texte.grid(row=0, column=0)
-
-    bouton = Button(main_window, text="Open Visualization Window",
-                    command=VisuWindow, background="#b3d9ff")
-    bouton.grid(row=1, column=0)
+    main_window = MainWindow()
     main_window.mainloop()
