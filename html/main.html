@@ -42,7 +42,8 @@ import json
 import random
 
 
-class VisualizationCanvas(Canvas):  # Canvas used for visualization
+class VisualizationCanvas(Canvas):  
+    &#34;&#34;&#34;Canvas used for visualization&#34;&#34;&#34;
     def __init__(self, keyname=&#34;&#34;, model=None, size=&#34;&#34;, label=None, *args, **kwargs):
         &#39;&#39;&#39;
         :param str keyname: Name in the collection
@@ -86,7 +87,8 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         self.bind(&#34;&lt;Button-3&gt;&#34;, self.changemodel)
     
     
-    def ChangeImage(self, imagename):  # Changes the image taking the 
+    def ChangeImage(self, imagename):  
+        &#34;&#34;&#34;Changes the image displayed on the canvas&#34;&#34;&#34;
         if self.showbasemodel:
             imagepath = self.imagefoldername+imagename
             if self.height &gt; self.width:
@@ -126,8 +128,7 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             print(e)
 
     def OnResize(self, event):
-        # When the canvas is resized (So, when the window is.)
-        
+        &#34;&#34;&#34;When the canvas is resized, resizes the image inside the canvas to fit &#34;&#34;&#34;
         self.width  = int(event.width)
         self.height = int(event.height)
         if self.model == None:
@@ -154,8 +155,8 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         self.image = image
     
     def changemodel(self, event):
-        # Change visualization mode
-        # Gets selected function and param from popup
+        &#34;&#34;&#34;Change visualization mode
+        Gets selected function and param from popup&#34;&#34;&#34;
         result = ModeSelectionPopup(self).getchoice()
         if result != [&#34;&#34;, &#34;&#34;]:
             if result == &#34;none&#34;:  # When the user chose &#34;None&#34; or the canvas does not have a model already
@@ -192,9 +193,10 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             print(&#34;Canceled&#34;)
 
 
-class VisualizationModel(object):  # The model that will be treated/displayed 
+class VisualizationModel(object):  
     def __init__(self, function, param):
         &#34;&#34;&#34;
+        The model that will be treated/displayed 
         param str function: The function to use from the R Script\n
         param str param: The parameter to use from the R Script
         &#34;&#34;&#34;
@@ -207,10 +209,15 @@ class VisualizationModel(object):  # The model that will be treated/displayed
         self.ratio = -1
 
     def GetFilenameAtStep(self, timeStep):
+        &#34;&#34;&#34;
+        returns the the filename at given step(int) as a str
+        &#34;&#34;&#34;
         return NameFormat(self.nameFormat, timeStep)+self.imageExtension
 
-# The class used for the popup window when clicking on a Canvas
 class ModeSelectionPopup(object):
+    &#34;&#34;&#34;
+    The class used for the popup window when clicking on a Canvas
+    &#34;&#34;&#34;
     def __init__(self, parent):
         self.toplevel = Toplevel(parent)
         self.toplevel.title(&#34;Changing mode&#34;)
@@ -296,8 +303,8 @@ class ModeSelectionPopup(object):
         return self.selection
 
 
-class VisuWindow(Toplevel):  # The visualization window
-
+class VisuWindow(Toplevel):  
+    &#34;&#34;&#34;The visualization window&#34;&#34;&#34;
     def __init__(self, *args, **kwargs):
         print(&#34;Creating visualization window&#34;)
         &#34;&#34;&#34;global config
@@ -305,6 +312,7 @@ class VisuWindow(Toplevel):  # The visualization window
         config = json.load(open(&#34;config.json&#34;))
         visuconfig = config[&#34;visu&#34;]&#34;&#34;&#34;
         self.canvgridsize = kwargs[&#34;canvgridsize&#34;]
+        del kwargs[&#34;canvgridsize&#34;]
         Toplevel.__init__(self, *args, *kwargs)
         self.title(&#34;Visualization&#34;)
         self.window_width   = ScreenResolution[0]
@@ -321,7 +329,8 @@ class VisuWindow(Toplevel):  # The visualization window
         self.grab_set()
 
 
-    def initwidgets(self):  # Initializes widgets
+    def initwidgets(self):  
+        &#34;&#34;&#34; Initializes widgets&#34;&#34;&#34;
         print(&#34;Creating widgets..&#34;)
         self.topframe       = Frame(self)
         self.bottomframe    = Frame(self)
@@ -332,7 +341,8 @@ class VisuWindow(Toplevel):  # The visualization window
         self.bottomframe.pack(side=&#34;bottom&#34;, fill=&#34;x&#34;, expand=False)
 
 
-    def initcanvas(self, canvasgrid):  # Initializes the visualization canvases
+    def initcanvas(self, canvasgrid):  
+        &#34;&#34;&#34;Initializes the visualization canvases&#34;&#34;&#34;
         print(&#34;Creating Canvas(es)..&#34;)
         
         try:  # try,except to catch any wrongly written size
@@ -380,7 +390,8 @@ class VisuWindow(Toplevel):  # The visualization window
 
 
 
-    def initplaystop(self):  # Initializes the play/stop functionnality widgets
+    def initplaystop(self):  
+        &#34;&#34;&#34; Initializes the play/stop functionnality widgets&#34;&#34;&#34;
         self.playframe = Frame(self.bottomframe)
         self.playframe.grid(row=1, column=0, sticky=&#34;nesw&#34;)
         self.playframe.grid_columnconfigure(6, weight=1)
@@ -430,8 +441,9 @@ class VisuWindow(Toplevel):  # The visualization window
         self.entryspeed.grid(row=0, column=7)
 
 
-    def initrest(self):  # Initializes the rest of the widgets
-
+    def initrest(self):
+        &#34;&#34;&#34;Initializes the rest of the widgets
+        &#34;&#34;&#34;
         # CHECKBOX (Keep slider at last index)
         self.toend_checkbox = Checkbutton(
             self.playframe,
@@ -466,14 +478,14 @@ class VisuWindow(Toplevel):  # The visualization window
         self.bottomframe.grid_columnconfigure(0, weight=1)
         self.slider.grid(row=0, column=0, sticky=&#34;nesw&#34;)
 
-    def getsliderobject(self):  # Returns the slider
-        return self.slider
-
-    def checkbox_get(self):  # Gets the state of the checkbox
+    def checkbox_get(self):
+        &#34;&#34;&#34;Gets the state of the checkbox
+        &#34;&#34;&#34;
         return self.cb_checked.get()
 
-    def play_anim(self):  # Initializes the animation process
-        # Input verifications
+    def play_anim(self):
+        &#34;&#34;&#34;Initializes the animation process
+        Input verifications&#34;&#34;&#34;
         self.toend_checkbox.configure(state=DISABLED)
         if self.cb_checked.get():
             self.toend_checkbox.toggle()
@@ -514,8 +526,9 @@ class VisuWindow(Toplevel):  # The visualization window
         self.playsliderpos = self._from
         self.continue_anim()
 
-    def continue_anim(self):  # Plays the animation
-        # Calls itself every x miliseconds and pushes the slider
+    def continue_anim(self):  
+        &#34;&#34;&#34; Plays the animation
+        Calls itself every x miliseconds and pushes the slider&#34;&#34;&#34;
         if self.playsliderpos &gt; self.to or self.askedstop or self.playsliderpos &gt; self.slider.maximum:
             self.slider.set(self._from)
             self.toend_checkbox.configure(state=NORMAL)
@@ -525,11 +538,14 @@ class VisuWindow(Toplevel):  # The visualization window
         self.after(self.speed, self.continue_anim)
 
     def stop_anim(self):
-        # Called when clicking stop
+        &#34;&#34;&#34;Called when clicking the stop button&#34;&#34;&#34;
         self.askedstop = True
 
     def OnSliderStep(self, num):
-        # 
+        &#34;&#34;&#34;
+        Whenever the slider gets moved
+        param int num: the number the event passes (the slider&#39;s actual value)
+        &#34;&#34;&#34;
         num = int(num)
         for canvas in self.ownedcanvas:
             if canvas.model is not None:
@@ -652,14 +668,19 @@ class MainWindow(Tk):
         self.createvisu = True
 
         self.text = Label(self, text=&#34;SpheroidViz\nCreated by Benjamin.C&#34;)
-        self.text.grid(row=0, column=0)
+        #self.text.grid(row=0, column=0,sticky=&#34;n&#34;)
+        self.text.pack(side=BOTTOM, fill=X)
         self.var_regex = re.compile(r&#34;^[1-9]+x[1-9]+$&#34;)
-        
+
         self.canvasgrid_frame = Frame(self)
-        self.canvasgrid_frame.grid(row=1, column=0)
+        self.canvasgrid_frame.pack(side=TOP)
+
+        self.bouton = Button(self.canvasgrid_frame, text=&#34;Open Visualization Window&#34;,
+                        command=self.createvisuwindow, background=&#34;#b3d9ff&#34;)
+        self.bouton.pack(side=BOTTOM)
         # The Label 
         self.canvasgrid_text = Label(self.canvasgrid_frame, text=&#34;Enter grid dimensions:&#34;)
-        self.canvasgrid_text.grid(row=0,column=0)
+        self.canvasgrid_text.pack(side=TOP, fill=Y)
 
         # The StringVar where there is the input text
         self.canvasgrid_var = StringVar()
@@ -667,13 +688,10 @@ class MainWindow(Tk):
 
         # The input box 
         self.canvasgrid_entry = Entry(self.canvasgrid_frame, textvariable=self.canvasgrid_var)
-        self.canvasgrid_entry.grid(row=0, column=1)
+        self.canvasgrid_entry.pack()
         self.canvasgrid_entry.insert(0, config[&#34;config&#34;][&#34;Canvas_grid&#34;])
         
 
-        self.bouton = Button(self, text=&#34;Open Visualization Window&#34;,
-                        command=self.createvisuwindow, background=&#34;#b3d9ff&#34;)
-        self.bouton.grid(row=2, column=0)
         
     def ontype(self,var):
         salut = self.var_regex.match(var.get())
@@ -862,14 +880,19 @@ is the name of the widget class.</p></section>
         self.createvisu = True
 
         self.text = Label(self, text=&#34;SpheroidViz\nCreated by Benjamin.C&#34;)
-        self.text.grid(row=0, column=0)
+        #self.text.grid(row=0, column=0,sticky=&#34;n&#34;)
+        self.text.pack(side=BOTTOM, fill=X)
         self.var_regex = re.compile(r&#34;^[1-9]+x[1-9]+$&#34;)
-        
+
         self.canvasgrid_frame = Frame(self)
-        self.canvasgrid_frame.grid(row=1, column=0)
+        self.canvasgrid_frame.pack(side=TOP)
+
+        self.bouton = Button(self.canvasgrid_frame, text=&#34;Open Visualization Window&#34;,
+                        command=self.createvisuwindow, background=&#34;#b3d9ff&#34;)
+        self.bouton.pack(side=BOTTOM)
         # The Label 
         self.canvasgrid_text = Label(self.canvasgrid_frame, text=&#34;Enter grid dimensions:&#34;)
-        self.canvasgrid_text.grid(row=0,column=0)
+        self.canvasgrid_text.pack(side=TOP, fill=Y)
 
         # The StringVar where there is the input text
         self.canvasgrid_var = StringVar()
@@ -877,13 +900,10 @@ is the name of the widget class.</p></section>
 
         # The input box 
         self.canvasgrid_entry = Entry(self.canvasgrid_frame, textvariable=self.canvasgrid_var)
-        self.canvasgrid_entry.grid(row=0, column=1)
+        self.canvasgrid_entry.pack()
         self.canvasgrid_entry.insert(0, config[&#34;config&#34;][&#34;Canvas_grid&#34;])
         
 
-        self.bouton = Button(self, text=&#34;Open Visualization Window&#34;,
-                        command=self.createvisuwindow, background=&#34;#b3d9ff&#34;)
-        self.bouton.grid(row=2, column=0)
         
     def ontype(self,var):
         salut = self.var_regex.match(var.get())
@@ -942,10 +962,13 @@ is the name of the widget class.</p></section>
 <span>(</span><span>parent)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>The class used for the popup window when clicking on a Canvas</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class ModeSelectionPopup(object):
+    &#34;&#34;&#34;
+    The class used for the popup window when clicking on a Canvas
+    &#34;&#34;&#34;
     def __init__(self, parent):
         self.toplevel = Toplevel(parent)
         self.toplevel.title(&#34;Changing mode&#34;)
@@ -1165,7 +1188,7 @@ tickinterval, to, troughcolor, variable, width.</p></section>
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Toplevel widget, e.g. for dialogs.</p>
+<section class="desc"><p>The visualization window</p>
 <p>Construct a toplevel widget with the parent MASTER.</p>
 <p>Valid resource names: background, bd, bg, borderwidth, class,
 colormap, container, cursor, height, highlightbackground,
@@ -1173,8 +1196,8 @@ highlightcolor, highlightthickness, menu, relief, screen, takefocus,
 use, visual, width.</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">class VisuWindow(Toplevel):  # The visualization window
-
+<pre><code class="python">class VisuWindow(Toplevel):  
+    &#34;&#34;&#34;The visualization window&#34;&#34;&#34;
     def __init__(self, *args, **kwargs):
         print(&#34;Creating visualization window&#34;)
         &#34;&#34;&#34;global config
@@ -1182,6 +1205,7 @@ use, visual, width.</p></section>
         config = json.load(open(&#34;config.json&#34;))
         visuconfig = config[&#34;visu&#34;]&#34;&#34;&#34;
         self.canvgridsize = kwargs[&#34;canvgridsize&#34;]
+        del kwargs[&#34;canvgridsize&#34;]
         Toplevel.__init__(self, *args, *kwargs)
         self.title(&#34;Visualization&#34;)
         self.window_width   = ScreenResolution[0]
@@ -1198,7 +1222,8 @@ use, visual, width.</p></section>
         self.grab_set()
 
 
-    def initwidgets(self):  # Initializes widgets
+    def initwidgets(self):  
+        &#34;&#34;&#34; Initializes widgets&#34;&#34;&#34;
         print(&#34;Creating widgets..&#34;)
         self.topframe       = Frame(self)
         self.bottomframe    = Frame(self)
@@ -1209,7 +1234,8 @@ use, visual, width.</p></section>
         self.bottomframe.pack(side=&#34;bottom&#34;, fill=&#34;x&#34;, expand=False)
 
 
-    def initcanvas(self, canvasgrid):  # Initializes the visualization canvases
+    def initcanvas(self, canvasgrid):  
+        &#34;&#34;&#34;Initializes the visualization canvases&#34;&#34;&#34;
         print(&#34;Creating Canvas(es)..&#34;)
         
         try:  # try,except to catch any wrongly written size
@@ -1257,7 +1283,8 @@ use, visual, width.</p></section>
 
 
 
-    def initplaystop(self):  # Initializes the play/stop functionnality widgets
+    def initplaystop(self):  
+        &#34;&#34;&#34; Initializes the play/stop functionnality widgets&#34;&#34;&#34;
         self.playframe = Frame(self.bottomframe)
         self.playframe.grid(row=1, column=0, sticky=&#34;nesw&#34;)
         self.playframe.grid_columnconfigure(6, weight=1)
@@ -1307,8 +1334,9 @@ use, visual, width.</p></section>
         self.entryspeed.grid(row=0, column=7)
 
 
-    def initrest(self):  # Initializes the rest of the widgets
-
+    def initrest(self):
+        &#34;&#34;&#34;Initializes the rest of the widgets
+        &#34;&#34;&#34;
         # CHECKBOX (Keep slider at last index)
         self.toend_checkbox = Checkbutton(
             self.playframe,
@@ -1343,14 +1371,14 @@ use, visual, width.</p></section>
         self.bottomframe.grid_columnconfigure(0, weight=1)
         self.slider.grid(row=0, column=0, sticky=&#34;nesw&#34;)
 
-    def getsliderobject(self):  # Returns the slider
-        return self.slider
-
-    def checkbox_get(self):  # Gets the state of the checkbox
+    def checkbox_get(self):
+        &#34;&#34;&#34;Gets the state of the checkbox
+        &#34;&#34;&#34;
         return self.cb_checked.get()
 
-    def play_anim(self):  # Initializes the animation process
-        # Input verifications
+    def play_anim(self):
+        &#34;&#34;&#34;Initializes the animation process
+        Input verifications&#34;&#34;&#34;
         self.toend_checkbox.configure(state=DISABLED)
         if self.cb_checked.get():
             self.toend_checkbox.toggle()
@@ -1391,8 +1419,9 @@ use, visual, width.</p></section>
         self.playsliderpos = self._from
         self.continue_anim()
 
-    def continue_anim(self):  # Plays the animation
-        # Calls itself every x miliseconds and pushes the slider
+    def continue_anim(self):  
+        &#34;&#34;&#34; Plays the animation
+        Calls itself every x miliseconds and pushes the slider&#34;&#34;&#34;
         if self.playsliderpos &gt; self.to or self.askedstop or self.playsliderpos &gt; self.slider.maximum:
             self.slider.set(self._from)
             self.toend_checkbox.configure(state=NORMAL)
@@ -1402,11 +1431,14 @@ use, visual, width.</p></section>
         self.after(self.speed, self.continue_anim)
 
     def stop_anim(self):
-        # Called when clicking stop
+        &#34;&#34;&#34;Called when clicking the stop button&#34;&#34;&#34;
         self.askedstop = True
 
     def OnSliderStep(self, num):
-        # 
+        &#34;&#34;&#34;
+        Whenever the slider gets moved
+        param int num: the number the event passes (the slider&#39;s actual value)
+        &#34;&#34;&#34;
         num = int(num)
         for canvas in self.ownedcanvas:
             if canvas.model is not None:
@@ -1455,11 +1487,15 @@ use, visual, width.</p></section>
 <span>def <span class="ident">OnSliderStep</span></span>(<span>self, num)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Whenever the slider gets moved
+param int num: the number the event passes (the slider's actual value)</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def OnSliderStep(self, num):
-    # 
+    &#34;&#34;&#34;
+    Whenever the slider gets moved
+    param int num: the number the event passes (the slider&#39;s actual value)
+    &#34;&#34;&#34;
     num = int(num)
     for canvas in self.ownedcanvas:
         if canvas.model is not None:
@@ -1508,10 +1544,12 @@ use, visual, width.</p></section>
 <span>def <span class="ident">checkbox_get</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Gets the state of the checkbox</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def checkbox_get(self):  # Gets the state of the checkbox
+<pre><code class="python">def checkbox_get(self):
+    &#34;&#34;&#34;Gets the state of the checkbox
+    &#34;&#34;&#34;
     return self.cb_checked.get()</code></pre>
 </details>
 </dd>
@@ -1519,11 +1557,13 @@ use, visual, width.</p></section>
 <span>def <span class="ident">continue_anim</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Plays the animation
+Calls itself every x miliseconds and pushes the slider</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def continue_anim(self):  # Plays the animation
-    # Calls itself every x miliseconds and pushes the slider
+<pre><code class="python">def continue_anim(self):  
+    &#34;&#34;&#34; Plays the animation
+    Calls itself every x miliseconds and pushes the slider&#34;&#34;&#34;
     if self.playsliderpos &gt; self.to or self.askedstop or self.playsliderpos &gt; self.slider.maximum:
         self.slider.set(self._from)
         self.toend_checkbox.configure(state=NORMAL)
@@ -1533,25 +1573,15 @@ use, visual, width.</p></section>
     self.after(self.speed, self.continue_anim)</code></pre>
 </details>
 </dd>
-<dt id="main.VisuWindow.getsliderobject"><code class="name flex">
-<span>def <span class="ident">getsliderobject</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def getsliderobject(self):  # Returns the slider
-    return self.slider</code></pre>
-</details>
-</dd>
 <dt id="main.VisuWindow.initcanvas"><code class="name flex">
 <span>def <span class="ident">initcanvas</span></span>(<span>self, canvasgrid)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Initializes the visualization canvases</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def initcanvas(self, canvasgrid):  # Initializes the visualization canvases
+<pre><code class="python">def initcanvas(self, canvasgrid):  
+    &#34;&#34;&#34;Initializes the visualization canvases&#34;&#34;&#34;
     print(&#34;Creating Canvas(es)..&#34;)
     
     try:  # try,except to catch any wrongly written size
@@ -1600,10 +1630,11 @@ use, visual, width.</p></section>
 <span>def <span class="ident">initplaystop</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Initializes the play/stop functionnality widgets</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def initplaystop(self):  # Initializes the play/stop functionnality widgets
+<pre><code class="python">def initplaystop(self):  
+    &#34;&#34;&#34; Initializes the play/stop functionnality widgets&#34;&#34;&#34;
     self.playframe = Frame(self.bottomframe)
     self.playframe.grid(row=1, column=0, sticky=&#34;nesw&#34;)
     self.playframe.grid_columnconfigure(6, weight=1)
@@ -1657,11 +1688,12 @@ use, visual, width.</p></section>
 <span>def <span class="ident">initrest</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Initializes the rest of the widgets</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def initrest(self):  # Initializes the rest of the widgets
-
+<pre><code class="python">def initrest(self):
+    &#34;&#34;&#34;Initializes the rest of the widgets
+    &#34;&#34;&#34;
     # CHECKBOX (Keep slider at last index)
     self.toend_checkbox = Checkbutton(
         self.playframe,
@@ -1701,10 +1733,11 @@ use, visual, width.</p></section>
 <span>def <span class="ident">initwidgets</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Initializes widgets</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def initwidgets(self):  # Initializes widgets
+<pre><code class="python">def initwidgets(self):  
+    &#34;&#34;&#34; Initializes widgets&#34;&#34;&#34;
     print(&#34;Creating widgets..&#34;)
     self.topframe       = Frame(self)
     self.bottomframe    = Frame(self)
@@ -1719,11 +1752,13 @@ use, visual, width.</p></section>
 <span>def <span class="ident">play_anim</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Initializes the animation process
+Input verifications</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def play_anim(self):  # Initializes the animation process
-    # Input verifications
+<pre><code class="python">def play_anim(self):
+    &#34;&#34;&#34;Initializes the animation process
+    Input verifications&#34;&#34;&#34;
     self.toend_checkbox.configure(state=DISABLED)
     if self.cb_checked.get():
         self.toend_checkbox.toggle()
@@ -1769,11 +1804,11 @@ use, visual, width.</p></section>
 <span>def <span class="ident">stop_anim</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Called when clicking the stop button</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def stop_anim(self):
-    # Called when clicking stop
+    &#34;&#34;&#34;Called when clicking the stop button&#34;&#34;&#34;
     self.askedstop = True</code></pre>
 </details>
 </dd>
@@ -1784,13 +1819,14 @@ use, visual, width.</p></section>
 <span>(</span><span>keyname='', model=None, size='', label=None, *args, **kwargs)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Canvas widget to display graphical elements like lines or text.</p>
+<section class="desc"><p>Canvas used for visualization</p>
 <p>:param str keyname: Name in the collection
 if not specified = Visu_Canvas+lengthofcollection
 :param str size: Size of the canvas ex:("200x200")</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">class VisualizationCanvas(Canvas):  # Canvas used for visualization
+<pre><code class="python">class VisualizationCanvas(Canvas):  
+    &#34;&#34;&#34;Canvas used for visualization&#34;&#34;&#34;
     def __init__(self, keyname=&#34;&#34;, model=None, size=&#34;&#34;, label=None, *args, **kwargs):
         &#39;&#39;&#39;
         :param str keyname: Name in the collection
@@ -1834,7 +1870,8 @@ if not specified = Visu_Canvas+lengthofcollection
         self.bind(&#34;&lt;Button-3&gt;&#34;, self.changemodel)
     
     
-    def ChangeImage(self, imagename):  # Changes the image taking the 
+    def ChangeImage(self, imagename):  
+        &#34;&#34;&#34;Changes the image displayed on the canvas&#34;&#34;&#34;
         if self.showbasemodel:
             imagepath = self.imagefoldername+imagename
             if self.height &gt; self.width:
@@ -1874,8 +1911,7 @@ if not specified = Visu_Canvas+lengthofcollection
             print(e)
 
     def OnResize(self, event):
-        # When the canvas is resized (So, when the window is.)
-        
+        &#34;&#34;&#34;When the canvas is resized, resizes the image inside the canvas to fit &#34;&#34;&#34;
         self.width  = int(event.width)
         self.height = int(event.height)
         if self.model == None:
@@ -1902,8 +1938,8 @@ if not specified = Visu_Canvas+lengthofcollection
         self.image = image
     
     def changemodel(self, event):
-        # Change visualization mode
-        # Gets selected function and param from popup
+        &#34;&#34;&#34;Change visualization mode
+        Gets selected function and param from popup&#34;&#34;&#34;
         result = ModeSelectionPopup(self).getchoice()
         if result != [&#34;&#34;, &#34;&#34;]:
             if result == &#34;none&#34;:  # When the user chose &#34;None&#34; or the canvas does not have a model already
@@ -1957,10 +1993,11 @@ if not specified = Visu_Canvas+lengthofcollection
 <span>def <span class="ident">ChangeImage</span></span>(<span>self, imagename)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Changes the image displayed on the canvas</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def ChangeImage(self, imagename):  # Changes the image taking the 
+<pre><code class="python">def ChangeImage(self, imagename):  
+    &#34;&#34;&#34;Changes the image displayed on the canvas&#34;&#34;&#34;
     if self.showbasemodel:
         imagepath = self.imagefoldername+imagename
         if self.height &gt; self.width:
@@ -2004,12 +2041,11 @@ if not specified = Visu_Canvas+lengthofcollection
 <span>def <span class="ident">OnResize</span></span>(<span>self, event)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>When the canvas is resized, resizes the image inside the canvas to fit</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def OnResize(self, event):
-    # When the canvas is resized (So, when the window is.)
-    
+    &#34;&#34;&#34;When the canvas is resized, resizes the image inside the canvas to fit &#34;&#34;&#34;
     self.width  = int(event.width)
     self.height = int(event.height)
     if self.model == None:
@@ -2040,12 +2076,13 @@ if not specified = Visu_Canvas+lengthofcollection
 <span>def <span class="ident">changemodel</span></span>(<span>self, event)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Change visualization mode
+Gets selected function and param from popup</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def changemodel(self, event):
-    # Change visualization mode
-    # Gets selected function and param from popup
+    &#34;&#34;&#34;Change visualization mode
+    Gets selected function and param from popup&#34;&#34;&#34;
     result = ModeSelectionPopup(self).getchoice()
     if result != [&#34;&#34;, &#34;&#34;]:
         if result == &#34;none&#34;:  # When the user chose &#34;None&#34; or the canvas does not have a model already
@@ -2089,13 +2126,15 @@ if not specified = Visu_Canvas+lengthofcollection
 <span>(</span><span>function, param)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>param str function: The function to use from the R Script</p>
+<section class="desc"><p>The model that will be treated/displayed
+param str function: The function to use from the R Script</p>
 <p>param str param: The parameter to use from the R Script</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">class VisualizationModel(object):  # The model that will be treated/displayed 
+<pre><code class="python">class VisualizationModel(object):  
     def __init__(self, function, param):
         &#34;&#34;&#34;
+        The model that will be treated/displayed 
         param str function: The function to use from the R Script\n
         param str param: The parameter to use from the R Script
         &#34;&#34;&#34;
@@ -2108,6 +2147,9 @@ if not specified = Visu_Canvas+lengthofcollection
         self.ratio = -1
 
     def GetFilenameAtStep(self, timeStep):
+        &#34;&#34;&#34;
+        returns the the filename at given step(int) as a str
+        &#34;&#34;&#34;
         return NameFormat(self.nameFormat, timeStep)+self.imageExtension</code></pre>
 </details>
 <h3>Methods</h3>
@@ -2116,10 +2158,13 @@ if not specified = Visu_Canvas+lengthofcollection
 <span>def <span class="ident">GetFilenameAtStep</span></span>(<span>self, timeStep)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>returns the the filename at given step(int) as a str</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def GetFilenameAtStep(self, timeStep):
+    &#34;&#34;&#34;
+    returns the the filename at given step(int) as a str
+    &#34;&#34;&#34;
     return NameFormat(self.nameFormat, timeStep)+self.imageExtension</code></pre>
 </details>
 </dd>
@@ -2172,7 +2217,6 @@ if not specified = Visu_Canvas+lengthofcollection
 <li><code><a title="main.VisuWindow.Visu_Window" href="#main.VisuWindow.Visu_Window">Visu_Window</a></code></li>
 <li><code><a title="main.VisuWindow.checkbox_get" href="#main.VisuWindow.checkbox_get">checkbox_get</a></code></li>
 <li><code><a title="main.VisuWindow.continue_anim" href="#main.VisuWindow.continue_anim">continue_anim</a></code></li>
-<li><code><a title="main.VisuWindow.getsliderobject" href="#main.VisuWindow.getsliderobject">getsliderobject</a></code></li>
 <li><code><a title="main.VisuWindow.initcanvas" href="#main.VisuWindow.initcanvas">initcanvas</a></code></li>
 <li><code><a title="main.VisuWindow.initplaystop" href="#main.VisuWindow.initplaystop">initplaystop</a></code></li>
 <li><code><a title="main.VisuWindow.initrest" href="#main.VisuWindow.initrest">initrest</a></code></li>

@@ -18,7 +18,8 @@ import json
 import random
 
 
-class VisualizationCanvas(Canvas):  # Canvas used for visualization
+class VisualizationCanvas(Canvas):  
+    """Canvas used for visualization"""
     def __init__(self, keyname="", model=None, size="", label=None, *args, **kwargs):
         '''
         :param str keyname: Name in the collection
@@ -62,7 +63,8 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         self.bind("<Button-3>", self.changemodel)
     
     
-    def ChangeImage(self, imagename):  # Changes the image taking the 
+    def ChangeImage(self, imagename):  
+        """Changes the image displayed on the canvas"""
         if self.showbasemodel:
             imagepath = self.imagefoldername+imagename
             if self.height > self.width:
@@ -102,8 +104,7 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             print(e)
 
     def OnResize(self, event):
-        # When the canvas is resized (So, when the window is.)
-        
+        """When the canvas is resized, resizes the image inside the canvas to fit """
         self.width  = int(event.width)
         self.height = int(event.height)
         if self.model == None:
@@ -130,8 +131,8 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
         self.image = image
     
     def changemodel(self, event):
-        # Change visualization mode
-        # Gets selected function and param from popup
+        """Change visualization mode
+        Gets selected function and param from popup"""
         result = ModeSelectionPopup(self).getchoice()
         if result != ["", ""]:
             if result == "none":  # When the user chose "None" or the canvas does not have a model already
@@ -168,9 +169,10 @@ class VisualizationCanvas(Canvas):  # Canvas used for visualization
             print("Canceled")
 
 
-class VisualizationModel(object):  # The model that will be treated/displayed 
+class VisualizationModel(object):  
     def __init__(self, function, param):
         """
+        The model that will be treated/displayed 
         param str function: The function to use from the R Script\n
         param str param: The parameter to use from the R Script
         """
@@ -183,10 +185,15 @@ class VisualizationModel(object):  # The model that will be treated/displayed
         self.ratio = -1
 
     def GetFilenameAtStep(self, timeStep):
+        """
+        returns the the filename at given step(int) as a str
+        """
         return NameFormat(self.nameFormat, timeStep)+self.imageExtension
 
-# The class used for the popup window when clicking on a Canvas
 class ModeSelectionPopup(object):
+    """
+    The class used for the popup window when clicking on a Canvas
+    """
     def __init__(self, parent):
         self.toplevel = Toplevel(parent)
         self.toplevel.title("Changing mode")
@@ -272,8 +279,8 @@ class ModeSelectionPopup(object):
         return self.selection
 
 
-class VisuWindow(Toplevel):  # The visualization window
-
+class VisuWindow(Toplevel):  
+    """The visualization window"""
     def __init__(self, *args, **kwargs):
         print("Creating visualization window")
         """global config
@@ -298,7 +305,8 @@ class VisuWindow(Toplevel):  # The visualization window
         self.grab_set()
 
 
-    def initwidgets(self):  # Initializes widgets
+    def initwidgets(self):  
+        """ Initializes widgets"""
         print("Creating widgets..")
         self.topframe       = Frame(self)
         self.bottomframe    = Frame(self)
@@ -309,7 +317,8 @@ class VisuWindow(Toplevel):  # The visualization window
         self.bottomframe.pack(side="bottom", fill="x", expand=False)
 
 
-    def initcanvas(self, canvasgrid):  # Initializes the visualization canvases
+    def initcanvas(self, canvasgrid):  
+        """Initializes the visualization canvases"""
         print("Creating Canvas(es)..")
         
         try:  # try,except to catch any wrongly written size
@@ -357,7 +366,8 @@ class VisuWindow(Toplevel):  # The visualization window
 
 
 
-    def initplaystop(self):  # Initializes the play/stop functionnality widgets
+    def initplaystop(self):  
+        """ Initializes the play/stop functionnality widgets"""
         self.playframe = Frame(self.bottomframe)
         self.playframe.grid(row=1, column=0, sticky="nesw")
         self.playframe.grid_columnconfigure(6, weight=1)
@@ -407,8 +417,9 @@ class VisuWindow(Toplevel):  # The visualization window
         self.entryspeed.grid(row=0, column=7)
 
 
-    def initrest(self):  # Initializes the rest of the widgets
-
+    def initrest(self):
+        """Initializes the rest of the widgets
+        """
         # CHECKBOX (Keep slider at last index)
         self.toend_checkbox = Checkbutton(
             self.playframe,
@@ -443,14 +454,14 @@ class VisuWindow(Toplevel):  # The visualization window
         self.bottomframe.grid_columnconfigure(0, weight=1)
         self.slider.grid(row=0, column=0, sticky="nesw")
 
-    def getsliderobject(self):  # Returns the slider
-        return self.slider
-
-    def checkbox_get(self):  # Gets the state of the checkbox
+    def checkbox_get(self):
+        """Gets the state of the checkbox
+        """
         return self.cb_checked.get()
 
-    def play_anim(self):  # Initializes the animation process
-        # Input verifications
+    def play_anim(self):
+        """Initializes the animation process
+        Input verifications"""
         self.toend_checkbox.configure(state=DISABLED)
         if self.cb_checked.get():
             self.toend_checkbox.toggle()
@@ -491,8 +502,9 @@ class VisuWindow(Toplevel):  # The visualization window
         self.playsliderpos = self._from
         self.continue_anim()
 
-    def continue_anim(self):  # Plays the animation
-        # Calls itself every x miliseconds and pushes the slider
+    def continue_anim(self):  
+        """ Plays the animation
+        Calls itself every x miliseconds and pushes the slider"""
         if self.playsliderpos > self.to or self.askedstop or self.playsliderpos > self.slider.maximum:
             self.slider.set(self._from)
             self.toend_checkbox.configure(state=NORMAL)
@@ -502,11 +514,14 @@ class VisuWindow(Toplevel):  # The visualization window
         self.after(self.speed, self.continue_anim)
 
     def stop_anim(self):
-        # Called when clicking stop
+        """Called when clicking the stop button"""
         self.askedstop = True
 
     def OnSliderStep(self, num):
-        # 
+        """
+        Whenever the slider gets moved
+        param int num: the number the event passes (the slider's actual value)
+        """
         num = int(num)
         for canvas in self.ownedcanvas:
             if canvas.model is not None:

@@ -16,7 +16,6 @@ class StringManipulation():
 
 class DataManagement():
     def svg_to_png(self, path, delete=False,outputheight=200,outputwidth=200):
-
         '''
         Takes a svg file or an entire directory of svg files and 
         converts it to a png and deletes the svg if told to
@@ -43,7 +42,9 @@ class DataManagement():
             if delete:
                 os.unlink(path)
 
-    def getnumberofpng(self, path, reg="*.png"):  # Returns the number of png files in specified directory
+    def getnumberofpng(self, path, reg="*.png"):  
+        """Returns the number of png files in specified directory
+        """
         pattern = re.compile(reg)
         files = os.listdir(path)
         pngfiles = 0
@@ -51,15 +52,3 @@ class DataManagement():
             if  pattern.match(file) :
                 pngfiles += 1
         return pngfiles
-        
-    def to_png(self): # ??? forgot where i use it but keeping it here jic
-        width = heigh = 300
-        path = os.path.realpath(__file__).strip("convert.py")
-        files = os.listdir(path)
-        i = 0
-        for file in files:
-            if (".jpg" in file) or (".png" in file) or (".jpeg" in file):
-                img = Image.open(path+"/"+file)
-                img = img.resize((width, heigh), PIL.Image.ANTIALIAS)
-                img.save("canard"+str(i)+".png")
-                i += 1
