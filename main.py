@@ -6,6 +6,7 @@ import rpy2.robjects as robjects
 import screeninfo
 import time
 from Utils import *
+import subprocess
 from object_collections import ObjectCollection as Oc
 import queue
 import threading
@@ -208,7 +209,7 @@ class ModeSelectionPopup(object):
     def __init__(self, parent):
         self.toplevel = Toplevel(parent)
         self.toplevel.title("Changing mode")
-        self.toplevel.resizable = (False,False)
+        self.toplevel.resizable(False,False)
         self.selection = ["", ""]
         # WIDGETS INIT -----------------------------------------
 
@@ -289,9 +290,69 @@ class ModeSelectionPopup(object):
         self.selection[1] = self.paramsLb.get(ACTIVE)
         self.toplevel.destroy()
 
-    def GetChoice(self):  # Returns the selected option
+    def GetChoice(self):
+        """Returns the selected option"""
         self.toplevel.wait_window()
         return self.selection
+
+
+class LaunchSimuPopup(object):
+    """Popup window to start the simulation"""
+    def __init__(self, parent, *args, **kwargs):
+        self.toplevel = Toplevel(parent)
+        self.toplevel.resizable(False, False)
+        self.toplevel.minsize(width=282, height=100)
+        self.toplevel.grab_set()
+        self.toplevel.bind("WM_DELETE_WINDOW", self.OnClickCancel)
+        self.toplevel.title("Start simulation")
+        self.mainframe = Frame(self.toplevel)
+        self.mainframe.pack(fill=BOTH)
+        self.reg = re.compile(r"^(\w|\d)+$")
+        self.valid = True
+        self.clearVar = BooleanVar()
+        self.selection = ["",False]
+        self.textvar = StringVar()
+        self.textvar.trace("w",lambda name, index, mode, var=self.textvar: self.OnType(var))
+        self.entry = Entry(self.mainframe, textvariable=self.textvar)
+
+
+        self.label = Label(self.mainframe, text="Name of the simulation\n (no spaces)")
+        self.label.pack(side=TOP)
+        self.entry.pack(fill=X,side=TOP)
+        self.checkbox = Checkbutton(self.mainframe, text="Clear", onvalue=True, offvalue=False, variable=self.clearVar)
+        self.checkbox.pack(side=TOP)
+
+        self.entry.insert(0, "NewModel")
+
+        self.buttonframe = Frame(self.mainframe)
+        self.buttonframe.pack(side=BOTTOM)
+        self.okbutton = Button(self.buttonframe, text="Ok", command=self.OnClickOk)
+        self.okbutton.grid(row=0, column=0)
+
+        self.cancelbutton = Button(self.buttonframe, text="Cancel", command=self.OnClickCancel)
+        self.cancelbutton.grid(row=0, column=1)
+    
+    def OnClickOk(self):
+        if self.valid:
+            self.selection[0] = self.textvar.get()
+            self.selection[1] = self.clearVar.get()
+            self.toplevel.destroy()
+    
+    def GetChoice(self):
+        self.toplevel.wait_window()
+        return self.selection
+
+    def OnClickCancel(self):
+        self.selection = ""
+        self.toplevel.destroy()
+    
+    def OnType(self, var):
+        if re.match(self.reg, var.get()):
+            self.valid = True
+            self.entry.config(bg="green")
+        else:
+            self.valid = False
+            self.entry.config(bg="red")
 
 
 class VisuWindow(Toplevel):  
@@ -445,7 +506,11 @@ class VisuWindow(Toplevel):
         Oc.checkboxes["Visu_Checkbox" +
                       str(len(Oc.checkboxes))] = self.toend_checkbox
         self.toend_checkbox.grid(row=0, column=8)
-
+        
+        # Start simulation
+        self.simubutton = Button(self.playframe, text="OpenSalami", command=self.StartSimulation)
+        self.simubutton.grid(row=0, column=9)
+        
         # SCALE
         self.update()  # Update to be able to get the window size
         numberofpngs = Dm.getnumberofpng(img_folder_path, pngregex)
@@ -467,6 +532,19 @@ class VisuWindow(Toplevel):
         self.bottomframe.grid_columnconfigure(0, weight=1)
         self.slider.grid(row=0, column=0, sticky="nesw")
 
+    def StartSimulation(self):
+        
+        choice = LaunchSimuPopup(self).GetChoice()
+        if choice[1]:
+            choice[1] = "-clear"
+        else:
+            choice[1] = ""
+        if choice[0] == "":
+            return
+        runcommand = "/bin/bash ./run.sh " + str(choice[1]) + " " + str(choice[0])
+        print("Found run_model_pipeline.sh in parent directory, executing..")
+        subprocess.call(["x-terminal-emulator","-e", runcommand])
+            
     def checkbox_get(self):
         """Gets the state of the checkbox
         Returns:
@@ -582,7 +660,7 @@ class MainWindow(Tk):
         self.grid_rowconfigure(2, weight=1)
         Oc.windows['Main'] = self  # NAMING MAIN WINDOW (ctrl+f)
         self.minsize(width=window_width, height=window_height)
-        self.resizable = (False,False)
+        self.resizable(False,False)
         self.visuwindow = None
         self.validsize = True
 
