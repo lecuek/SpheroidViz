@@ -18,9 +18,12 @@ class DataManagement():
     def svg_to_png(self, path, delete=False,outputheight=200,outputwidth=200):
         '''
         Takes a svg file or an entire directory of svg files and 
-        converts it to a png and deletes the svg if told to
-        :param str path: The path and name of the file path/name.svg
-        :param bool delete: If it should delete the source or not, default False
+        converts it to a png and deletes the svg if told to \n
+        Args:
+            path (str): The path and name of the file path/name.svg
+            delete (bool): If it should delete the source or not, default False
+            outputheight (int): In pixels
+            outputwidth (int): In pixels
         '''
         if ".svg" not in path:
             files = os.listdir(path)
@@ -44,6 +47,9 @@ class DataManagement():
 
     def getnumberofpng(self, path, reg="*.png"):  
         """Returns the number of png files in specified directory
+        Args:
+            path (str): Where the method should search for the pngs
+            reg (str): The regex 
         """
         pattern = re.compile(reg)
         files = os.listdir(path)

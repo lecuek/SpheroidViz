@@ -22,13 +22,14 @@
 <section id="section-intro">
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">import sys
+<pre><code class="python"># -*- coding: utf-8 -*-
+import sys
 import rpy2.robjects.lib.ggplot2 as ggplot2
 import rpy2.robjects.packages as rpackages
 import rpy2.robjects as robjects
 import screeninfo
 import time
-from CuekUtils import *
+from Utils import *
 from object_collections import ObjectCollection as Oc
 import queue
 import threading
@@ -43,13 +44,17 @@ import random
 
 
 class VisualizationCanvas(Canvas):  
-    &#34;&#34;&#34;Canvas used for visualization&#34;&#34;&#34;
+    &#34;&#34;&#34;This class is the class used to create de Canvases that displays the created models.
+    &#34;&#34;&#34;
     def __init__(self, keyname=&#34;&#34;, model=None, size=&#34;&#34;, label=None, *args, **kwargs):
-        &#39;&#39;&#39;
-        :param str keyname: Name in the collection
-        if not specified = Visu_Canvas+lengthofcollection
-        :param str size: Size of the canvas ex:(&#34;200x200&#34;)
-        &#39;&#39;&#39;
+        &#34;&#34;&#34;
+        Args:
+            keyname (str, optional): Key name in the collection
+            if not specified = Visu_Canvas+lengthofcollection
+            
+            size (str, optional): Size of the canvas ex:(&#34;200x200&#34;)
+            (mostly obsolete since it scales with the window)
+        &#34;&#34;&#34;
         Canvas.__init__(self, *args, **kwargs)
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -84,33 +89,35 @@ class VisualizationCanvas(Canvas):
             os.makedirs(self.outputpath)
         Oc.canvases[keyname] = self
         self.bind(&#34;&lt;Configure&gt;&#34;, self.OnResize)
-        self.bind(&#34;&lt;Button-3&gt;&#34;, self.changemodel)
+        self.bind(&#34;&lt;Button-3&gt;&#34;, self.ChangeModel)
     
     
     def ChangeImage(self, imagename):  
-        &#34;&#34;&#34;Changes the image displayed on the canvas&#34;&#34;&#34;
-        if self.showbasemodel:
-            imagepath = self.imagefoldername+imagename
-            if self.height &gt; self.width:
-                imagetk = ImageTk.PhotoImage(
-                    master=self, image=Image.open(imagepath).resize(( self.width, floor( self.width/self.baseratio) ) )
-                )
-            else:
-                imagetk = ImageTk.PhotoImage(
-                    master=self, image=Image.open(imagepath).resize((floor( self.height/self.baseratio), self.height) )
-                )
-            self.create_image(self.width/2, self.height/2, image=imagetk, anchor=&#34;center&#34;)
-            self.image = imagetk
-            self.imagepath = imagepath
-            return
-        else:
-            imagepath = self.outputpath+imagename
+        &#34;&#34;&#34;Changes the image displayed on the canvas
+        Args:
+            imagename (str): The name of the image to display
+        &#34;&#34;&#34;
         try:
-            #imgsize = str(self.height)+&#34;x&#34;+str(self.width)
+            if self.showbasemodel:
+                imagepath = self.imagefoldername+imagename
+                if self.height &gt; self.width:
+                    imagetk = ImageTk.PhotoImage(
+                        master=self, image=Image.open(imagepath).resize(( self.width, floor( self.width/self.baseratio) ) )
+                    )
+                else:
+                    imagetk = ImageTk.PhotoImage(
+                        master=self, image=Image.open(imagepath).resize((floor( self.height/self.baseratio), self.height) )
+                    )
+                self.create_image(self.width/2, self.height/2, image=imagetk, anchor=&#34;center&#34;)
+                self.image = imagetk
+                self.imagepath = imagepath
+                return
+            else:
+                imagepath = self.outputpath+imagename
             if self.model.ratio == -1:
                 imagetk = ImageTk.PhotoImage(
                     master=self, image=Image.open(imagepath)
-                )  # .resize((self.width, self.height)))
+                )
                 self.model.ratio = imagetk.width()/imagetk.height()
                 
             # Makes the image&#39;s size proportionnal to it&#39;s creation size
@@ -131,7 +138,7 @@ class VisualizationCanvas(Canvas):
         &#34;&#34;&#34;When the canvas is resized, resizes the image inside the canvas to fit &#34;&#34;&#34;
         self.width  = int(event.width)
         self.height = int(event.height)
-        if self.model == None:
+        if self.model == None: # No need to calculate the ratio since we know &#34;selectamode.png&#34; is completely square
             # Made so the resize is proportionnal
             if self.height &gt; self.width:
                 image = ImageTk.PhotoImage(master=self, image=Image.open(self.imagepath).resize((self.width,self.width)))
@@ -142,11 +149,8 @@ class VisualizationCanvas(Canvas):
             if self.height &gt; self.width:
                 image = ImageTk.PhotoImage(
                     master=self,
-                    image=Image.open(
-                        self.imagepath
-                    ).resize(
-                        (self.width,floor(self.width*fabs(self.model.ratio)))
-                    )
+                    # fabs() used to avoid negative numbers
+                    image=Image.open(self.imagepath).resize((self.width,floor(self.width*fabs(self.model.ratio))))  
                 )
             else:
                 image = ImageTk.PhotoImage(master=self, image=Image.open(self.imagepath).resize((floor(self.height*fabs(self.model.ratio)),self.height)))
@@ -154,10 +158,10 @@ class VisualizationCanvas(Canvas):
         self.create_image(self.width/2, self.height/2, image=image, anchor=&#34;center&#34;)
         self.image = image
     
-    def changemodel(self, event):
+    def ChangeModel(self, event):
         &#34;&#34;&#34;Change visualization mode
-        Gets selected function and param from popup&#34;&#34;&#34;
-        result = ModeSelectionPopup(self).getchoice()
+        Gets selected function and param from the ModeSelectionPopup&#34;&#34;&#34;
+        result = ModeSelectionPopup(self).GetChoice()
         if result != [&#34;&#34;, &#34;&#34;]:
             if result == &#34;none&#34;:  # When the user chose &#34;None&#34; or the canvas does not have a model already
                 self.showbasemodel = False
@@ -194,11 +198,12 @@ class VisualizationCanvas(Canvas):
 
 
 class VisualizationModel(object):  
+    &#34;&#34;&#34;The model that will be treated/displayed&#34;&#34;&#34;
     def __init__(self, function, param):
         &#34;&#34;&#34;
-        The model that will be treated/displayed 
-        param str function: The function to use from the R Script\n
-        param str param: The parameter to use from the R Script
+        Args:
+            function (str): The function to use from the R Script\n
+            param (str): The parameter to use from the R Script
         &#34;&#34;&#34;
         self.function = function
         self.param = param
@@ -210,13 +215,19 @@ class VisualizationModel(object):
 
     def GetFilenameAtStep(self, timeStep):
         &#34;&#34;&#34;
-        returns the the filename at given step(int) as a str
+        Returns:
+            The filename at given step (int) as str
         &#34;&#34;&#34;
         return NameFormat(self.nameFormat, timeStep)+self.imageExtension
 
+
 class ModeSelectionPopup(object):
-    &#34;&#34;&#34;
-    The class used for the popup window when clicking on a Canvas
+    &#34;&#34;&#34;The class used for the popup window when clicking on a Canvas
+    Args:
+        parent (Widget): The widget used as the parent (should be the one invoking it)
+    Note: 
+        Have to define a parent to the toplevel so when the TopLevel gets destroyed
+        the &#39;ModeSelectionPopup&#39; object still keeps the data selected.
     &#34;&#34;&#34;
     def __init__(self, parent):
         self.toplevel = Toplevel(parent)
@@ -237,28 +248,28 @@ class ModeSelectionPopup(object):
         )
         self.l1.grid(row=0, column=0)
 
-        self.createlistboxes()
+        self.CreateListboxes()
 
         # Ok Button
         self.b = Button(self.bottomframe,
-                        text=&#34;Base model&#34;, command=self.onclickbase)
+                        text=&#34;Base model&#34;, command=self.OnClickBase)
         self.b.grid(row=0, column=0, sticky=N+E+W+S)
         self.b = Button(self.bottomframe,
-                        text=&#34;None&#34;, command=self.onclicknone)
+                        text=&#34;None&#34;, command=self.OnClickNone)
         self.b.grid(row=0, column=1, sticky=N+E+W+S)
-        self.b = Button(self.bottomframe, text=&#34;Ok&#34;, command=self.onclickok)
+        self.b = Button(self.bottomframe, text=&#34;Ok&#34;, command=self.OnClickOk)
         self.b.grid(row=1, column=0)
 
         # Cancel Button
         self.cancelbutton = Button(
-            self.bottomframe, text=&#34;Cancel&#34;, command=self.cancel)
+            self.bottomframe, text=&#34;Cancel&#34;, command=self.OnClickCancel)
         self.cancelbutton.grid(row=1, column=1)
 
         self.toplevel.update_idletasks()
         self.toplevel.grab_set()
         # WIDGETS INIT -----------------------------------------
 
-    def createlistboxes(self):  # Pretty self explanatory
+    def CreateListboxes(self):  # Pretty self explanatory
         &#34;&#34;&#34;Simply creates the listboxes to select the function and parameter&#34;&#34;&#34;
         # Functions Listbox
         self.functionLb = Listbox(self.frame,exportselection=False)
@@ -281,24 +292,28 @@ class ModeSelectionPopup(object):
         # self.paramsLb.bind(&#34;&lt;&lt;ListboxSelect&gt;&gt;&#34;, self.onlistbox2change)
         self.paramsLb.grid(row=1, column=1)
 
-    def cancel(self):  # When Cancel is clicked
+    def OnClickCancel(self):  
+        &#34;&#34;&#34;When Cancel is clicked&#34;&#34;&#34;
         self.selection = [&#34;&#34;, &#34;&#34;]
         self.toplevel.destroy()
 
-    def onclicknone(self):
+    def OnClickNone(self):
+        &#34;&#34;&#34;When None is clicked&#34;&#34;&#34;
         self.selection = &#34;none&#34;
         self.toplevel.destroy()
 
-    def onclickbase(self):
+    def OnClickBase(self):
+        &#34;&#34;&#34;When Base is clicked&#34;&#34;&#34;
         self.selection = &#34;base&#34;
         self.toplevel.destroy()
 
-    def onclickok(self):  # When Ok is clicked
+    def OnClickOk(self):
+        &#34;&#34;&#34;When Ok is clicked&#34;&#34;&#34;
         self.selection[0] = self.functionLb.get(ACTIVE)
         self.selection[1] = self.paramsLb.get(ACTIVE)
         self.toplevel.destroy()
 
-    def getchoice(self):  # Returns the selected option
+    def GetChoice(self):  # Returns the selected option
         self.toplevel.wait_window()
         return self.selection
 
@@ -307,26 +322,24 @@ class VisuWindow(Toplevel):
     &#34;&#34;&#34;The visualization window&#34;&#34;&#34;
     def __init__(self, *args, **kwargs):
         print(&#34;Creating visualization window&#34;)
-        &#34;&#34;&#34;global config
-        global visuconfig
-        config = json.load(open(&#34;config.json&#34;))
-        visuconfig = config[&#34;visu&#34;]&#34;&#34;&#34;
         self.canvgridsize = kwargs[&#34;canvgridsize&#34;]
-        del kwargs[&#34;canvgridsize&#34;]
+        del kwargs[&#34;canvgridsize&#34;] # If not deleted from the list causes errors with Tkinter
         Toplevel.__init__(self, *args, *kwargs)
         self.title(&#34;Visualization&#34;)
-        self.window_width   = ScreenResolution[0]
-        self.window_height  = ScreenResolution[1]
-        self.maxsize(self.window_width, self.window_height)
-        #self.resizable = (False,False)
+        self.width   = ScreenResolution[0]
+        self.height  = ScreenResolution[1]
+        self.maxsize(self.width, self.height)
         self.cb_checked = BooleanVar()
         self.cb_checked.set(False)
         self.ownedcanvas = []
         self.askedstop = False
         self.initwidgets()
-        self.Visu_Window()
         Oc.windows[&#34;Visu&#34;] = self  # NAMING VISU WINDOW
         self.grab_set()
+        thread = threading.Thread(target=ThreadTarget, daemon=True)
+        Oc.threadings[&#39;Thread_Scan1&#39;] = thread  # NAMING THREAD (ctrl+f s)
+        thread.start()
+        self.after(100, QueueCheck)
 
 
     def initwidgets(self):  
@@ -464,7 +477,7 @@ class VisuWindow(Toplevel):
         # Bug fix (slider starting at -1 if no image found)
         if numberofpngs == -1:
             numberofpngs = 1
-        self.slider = MyScale(
+        self.slider = Scale(
             self.bottomframe,
             from_=0,
             to=numberofpngs-1,
@@ -480,6 +493,8 @@ class VisuWindow(Toplevel):
 
     def checkbox_get(self):
         &#34;&#34;&#34;Gets the state of the checkbox
+        Returns:
+            (bool)
         &#34;&#34;&#34;
         return self.cb_checked.get()
 
@@ -529,7 +544,7 @@ class VisuWindow(Toplevel):
     def continue_anim(self):  
         &#34;&#34;&#34; Plays the animation
         Calls itself every x miliseconds and pushes the slider&#34;&#34;&#34;
-        if self.playsliderpos &gt; self.to or self.askedstop or self.playsliderpos &gt; self.slider.maximum:
+        if self.playsliderpos &gt; self.to or self.askedstop or self.playsliderpos &gt; self.slider.cget(&#34;to&#34;):
             self.slider.set(self._from)
             self.toend_checkbox.configure(state=NORMAL)
             return
@@ -574,81 +589,9 @@ class VisuWindow(Toplevel):
             elif canvas.showbasemodel:
                 canvas.ChangeImage(NameFormat(name_format, num)+image_extension)
 
-    def Visu_Window(self):  # Will decide later if i put this in __init__
-        # Initializes the last components
-        thread = threading.Thread(target=ThreadTarget, daemon=True)
-        Oc.threadings[&#39;Thread_Scan1&#39;] = thread  # NAMING THREAD (ctrl+f s)
-        thread.start()
-        self.after(100, AfterCallback)
-
-
-class MyScale(Scale):  # My Scale class (was created to add a &#34;maximum&#34; value but not really necessary since widget.cget() exists)
-    def __init__(self, *args, **kwargs):
-        Scale.__init__(self, *args, **kwargs)
-        try:
-            self.maximum = kwargs[&#34;to&#34;]
-        except:
-            self.maximum = 100
-
-
-def AfterCallback():  # Method calls itself every second to check for instructions in the queue to execute
-    try:
-        value = scan_queue.get(block=False)
-        value()
-    except queue.Empty:
-        Oc.windows[&#39;Visu&#39;].after(400, AfterCallback)
-        return
-    Oc.windows[&#39;Visu&#39;].after(400, AfterCallback)
-
-
-def ThreadTarget():  # The Target of the second thread
-    # Method lists the directory containing the main svg files and launches the conversion
-    # if the directory contains more svg than the previous scan
-    previousScan = 0
-    try:
-        while True:
-            scan = len(os.listdir(img_folder_path))
-            if scan &gt; previousScan:
-                Dm.svg_to_png(img_folder_path)
-            previousScan = scan
-            scan_queue.put(SliderUpdate)
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print(&#34;ThreadTarget Keyboard interrupt&#34;)
-    except Exception as e:
-        print(e)
-        thread = threading.Thread(target=ThreadTarget, daemon=True)
-        thread.start()
-
-
-# Processes the Name_Format in config to a complete name ex: test$$$ -&gt; test025
-def NameFormat(nameformat, num):
-    nom = nameformat
-    compt = 0
-    for i in nom:
-        if i == &#39;$&#39;:
-            compt += 1
-    compt -= len(str(num))
-    nom = nom.strip(&#34;$&#34;)
-    nbzero = &#34;&#34;
-    for i in range(compt):
-        nbzero += &#34;0&#34;
-    nom += nbzero+str(num)
-    return nom
-
-
-def SliderUpdate(msg=&#34;&#34;):  # Called to update the slider and change it&#39;s maximum
-    visu_window = Oc.windows[&#34;Visu&#34;]
-    slider = Oc.sliders[&#34;Visu_Scale1&#34;]
-    if msg != &#34;&#34;:
-        print(msg)
-    # Dm.svg_to_png(path=img_folder_path)
-    numberofpngs = Dm.getnumberofpng(path=img_folder_path, reg=pngregex)
-    slider.configure(to=numberofpngs-1)
-    if visu_window.checkbox_get():  # To set at the end if the checkbox is ON
-        slider.set(numberofpngs-1)
 
 class MainWindow(Tk):
+    &#34;&#34;&#34;The Main window of the app&#34;&#34;&#34;
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, *kwargs)
         window_width = &#34;500&#34;  # 16/9
@@ -665,7 +608,7 @@ class MainWindow(Tk):
         self.minsize(width=window_width, height=window_height)
         self.resizable = (False,False)
         self.visuwindow = None
-        self.createvisu = True
+        self.validsize = True
 
         self.text = Label(self, text=&#34;SpheroidViz\nCreated by Benjamin.C&#34;)
         #self.text.grid(row=0, column=0,sticky=&#34;n&#34;)
@@ -691,20 +634,91 @@ class MainWindow(Tk):
         self.canvasgrid_entry.pack()
         self.canvasgrid_entry.insert(0, config[&#34;config&#34;][&#34;Canvas_grid&#34;])
         
-
-        
-    def ontype(self,var):
-        salut = self.var_regex.match(var.get())
-        if salut:
-            self.createvisu = True
+    def ontype(self, var):
+        &#34;&#34;&#34;
+        Veryfies if the size given is valid. Called when typing.
+        &#34;&#34;&#34;
+        regmatch = self.var_regex.match(var.get())
+        if regmatch:
+            self.validsize = True
             self.canvasgrid_entry.config(bg=&#34;green&#34;)
         else:
-            self.createvisu = False
+            self.validsize = False
             self.canvasgrid_entry.config(bg=&#34;red&#34;)
             
     def createvisuwindow(self):
-        if self.createvisu:
+        &#34;&#34;&#34;
+        Called when the button in the main window is clicked.
+        Creates the Visualization window if size is valid.
+        &#34;&#34;&#34;
+        if self.validsize:
             self.visuwindow = VisuWindow(self, canvgridsize=self.canvasgrid_var.get())
+
+
+def QueueCheck():
+    &#34;&#34;&#34;Method calls itself every second to check for instructions in the queue to execute&#34;&#34;&#34;
+    try:
+        value = scan_queue.get(block=False)
+        value()
+    except queue.Empty:
+        Oc.windows[&#39;Visu&#39;].after(400, QueueCheck)
+        return
+    Oc.windows[&#39;Visu&#39;].after(400, QueueCheck)
+
+
+def ThreadTarget():  
+    &#34;&#34;&#34;The Target of the second thread
+    Method lists the directory containing the main svg files and launches the conversion
+    if the directory contains more svg than the previous scan&#34;&#34;&#34;
+    try:
+        while True:
+            Dm.svg_to_png(img_folder_path)
+            scan_queue.put(SliderUpdate)
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print(&#34;ThreadTarget Keyboard interrupt&#34;)
+    except Exception as e:
+        print(e)
+        thread = threading.Thread(target=ThreadTarget, daemon=True)
+        thread.start()
+
+
+def NameFormat(nameformat, num):
+    &#34;&#34;&#34;Processes the Name_Format in config to a complete name ex: test$$$ -&gt; test025
+    Args:
+        nameformat (str): The string value of the name to format
+        num (int): The value replacing the &#39;$&#39;s in nameformat
+    &#34;&#34;&#34;
+    nom = nameformat
+    compt = 0
+    for i in nom:
+        if i == &#39;$&#39;:
+            compt += 1
+    compt -= len(str(num))
+    nom = nom.strip(&#34;$&#34;)
+    nbzero = &#34;&#34;
+    for i in range(compt):
+        nbzero += &#34;0&#34;
+    nom += nbzero+str(num)
+    return nom
+
+
+def SliderUpdate(msg=&#34;&#34;):  
+    &#34;&#34;&#34;Called to update the slider and change it&#39;s maximum
+    Args:
+        msg (str, optionnal): Used for debug purposes
+    &#34;&#34;&#34;
+    visu_window = Oc.windows[&#34;Visu&#34;]
+    slider = Oc.sliders[&#34;Visu_Scale1&#34;]
+    if msg != &#34;&#34;:
+        print(msg)
+    # Dm.svg_to_png(path=img_folder_path)
+    numberofpngs = Dm.getnumberofpng(path=img_folder_path, reg=pngregex)
+    slider.configure(to=numberofpngs-1)
+    if visu_window.checkbox_get():  # To set at the end if the checkbox is ON
+        slider.set(numberofpngs-1)
+
+
 
 
 if __name__ == &#34;__main__&#34;:
@@ -756,31 +770,26 @@ if __name__ == &#34;__main__&#34;:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="main.AfterCallback"><code class="name flex">
-<span>def <span class="ident">AfterCallback</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def AfterCallback():  # Method calls itself every second to check for instructions in the queue to execute
-    try:
-        value = scan_queue.get(block=False)
-        value()
-    except queue.Empty:
-        Oc.windows[&#39;Visu&#39;].after(400, AfterCallback)
-        return
-    Oc.windows[&#39;Visu&#39;].after(400, AfterCallback)</code></pre>
-</details>
-</dd>
 <dt id="main.NameFormat"><code class="name flex">
 <span>def <span class="ident">NameFormat</span></span>(<span>nameformat, num)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Processes the Name_Format in config to a complete name ex: test$$$ -&gt; test025</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>nameformat</code></strong> :&ensp;<code>str</code></dt>
+<dd>The string value of the name to format</dd>
+<dt><strong><code>num</code></strong> :&ensp;<code>int</code></dt>
+<dd>The value replacing the '$'s in nameformat</dd>
+</dl></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def NameFormat(nameformat, num):
+    &#34;&#34;&#34;Processes the Name_Format in config to a complete name ex: test$$$ -&gt; test025
+    Args:
+        nameformat (str): The string value of the name to format
+        num (int): The value replacing the &#39;$&#39;s in nameformat
+    &#34;&#34;&#34;
     nom = nameformat
     compt = 0
     for i in nom:
@@ -795,14 +804,41 @@ if __name__ == &#34;__main__&#34;:
     return nom</code></pre>
 </details>
 </dd>
+<dt id="main.QueueCheck"><code class="name flex">
+<span>def <span class="ident">QueueCheck</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Method calls itself every second to check for instructions in the queue to execute</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def QueueCheck():
+    &#34;&#34;&#34;Method calls itself every second to check for instructions in the queue to execute&#34;&#34;&#34;
+    try:
+        value = scan_queue.get(block=False)
+        value()
+    except queue.Empty:
+        Oc.windows[&#39;Visu&#39;].after(400, QueueCheck)
+        return
+    Oc.windows[&#39;Visu&#39;].after(400, QueueCheck)</code></pre>
+</details>
+</dd>
 <dt id="main.SliderUpdate"><code class="name flex">
 <span>def <span class="ident">SliderUpdate</span></span>(<span>msg='')</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Called to update the slider and change it's maximum</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>str</code>, <code>optionnal</code></dt>
+<dd>Used for debug purposes</dd>
+</dl></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def SliderUpdate(msg=&#34;&#34;):  # Called to update the slider and change it&#39;s maximum
+<pre><code class="python">def SliderUpdate(msg=&#34;&#34;):  
+    &#34;&#34;&#34;Called to update the slider and change it&#39;s maximum
+    Args:
+        msg (str, optionnal): Used for debug purposes
+    &#34;&#34;&#34;
     visu_window = Oc.windows[&#34;Visu&#34;]
     slider = Oc.sliders[&#34;Visu_Scale1&#34;]
     if msg != &#34;&#34;:
@@ -818,19 +854,18 @@ if __name__ == &#34;__main__&#34;:
 <span>def <span class="ident">ThreadTarget</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>The Target of the second thread
+Method lists the directory containing the main svg files and launches the conversion
+if the directory contains more svg than the previous scan</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def ThreadTarget():  # The Target of the second thread
-    # Method lists the directory containing the main svg files and launches the conversion
-    # if the directory contains more svg than the previous scan
-    previousScan = 0
+<pre><code class="python">def ThreadTarget():  
+    &#34;&#34;&#34;The Target of the second thread
+    Method lists the directory containing the main svg files and launches the conversion
+    if the directory contains more svg than the previous scan&#34;&#34;&#34;
     try:
         while True:
-            scan = len(os.listdir(img_folder_path))
-            if scan &gt; previousScan:
-                Dm.svg_to_png(img_folder_path)
-            previousScan = scan
+            Dm.svg_to_png(img_folder_path)
             scan_queue.put(SliderUpdate)
             time.sleep(1)
     except KeyboardInterrupt:
@@ -851,8 +886,7 @@ if __name__ == &#34;__main__&#34;:
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Toplevel widget of Tk which represents mostly the main window
-of an application. It has an associated Tcl interpreter.</p>
+<section class="desc"><p>The Main window of the app</p>
 <p>Return a new Toplevel widget on screen SCREENNAME. A new Tcl interpreter will
 be created. BASENAME will be used for the identification of the profile file (see
 readprofile).
@@ -861,6 +895,7 @@ is the name of the widget class.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class MainWindow(Tk):
+    &#34;&#34;&#34;The Main window of the app&#34;&#34;&#34;
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, *kwargs)
         window_width = &#34;500&#34;  # 16/9
@@ -877,7 +912,7 @@ is the name of the widget class.</p></section>
         self.minsize(width=window_width, height=window_height)
         self.resizable = (False,False)
         self.visuwindow = None
-        self.createvisu = True
+        self.validsize = True
 
         self.text = Label(self, text=&#34;SpheroidViz\nCreated by Benjamin.C&#34;)
         #self.text.grid(row=0, column=0,sticky=&#34;n&#34;)
@@ -903,19 +938,24 @@ is the name of the widget class.</p></section>
         self.canvasgrid_entry.pack()
         self.canvasgrid_entry.insert(0, config[&#34;config&#34;][&#34;Canvas_grid&#34;])
         
-
-        
-    def ontype(self,var):
-        salut = self.var_regex.match(var.get())
-        if salut:
-            self.createvisu = True
+    def ontype(self, var):
+        &#34;&#34;&#34;
+        Veryfies if the size given is valid. Called when typing.
+        &#34;&#34;&#34;
+        regmatch = self.var_regex.match(var.get())
+        if regmatch:
+            self.validsize = True
             self.canvasgrid_entry.config(bg=&#34;green&#34;)
         else:
-            self.createvisu = False
+            self.validsize = False
             self.canvasgrid_entry.config(bg=&#34;red&#34;)
             
     def createvisuwindow(self):
-        if self.createvisu:
+        &#34;&#34;&#34;
+        Called when the button in the main window is clicked.
+        Creates the Visualization window if size is valid.
+        &#34;&#34;&#34;
+        if self.validsize:
             self.visuwindow = VisuWindow(self, canvgridsize=self.canvasgrid_var.get())</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -930,11 +970,16 @@ is the name of the widget class.</p></section>
 <span>def <span class="ident">createvisuwindow</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Called when the button in the main window is clicked.
+Creates the Visualization window if size is valid.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def createvisuwindow(self):
-    if self.createvisu:
+    &#34;&#34;&#34;
+    Called when the button in the main window is clicked.
+    Creates the Visualization window if size is valid.
+    &#34;&#34;&#34;
+    if self.validsize:
         self.visuwindow = VisuWindow(self, canvgridsize=self.canvasgrid_var.get())</code></pre>
 </details>
 </dd>
@@ -942,16 +987,19 @@ is the name of the widget class.</p></section>
 <span>def <span class="ident">ontype</span></span>(<span>self, var)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Veryfies if the size given is valid. Called when typing.</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def ontype(self,var):
-    salut = self.var_regex.match(var.get())
-    if salut:
-        self.createvisu = True
+<pre><code class="python">def ontype(self, var):
+    &#34;&#34;&#34;
+    Veryfies if the size given is valid. Called when typing.
+    &#34;&#34;&#34;
+    regmatch = self.var_regex.match(var.get())
+    if regmatch:
+        self.validsize = True
         self.canvasgrid_entry.config(bg=&#34;green&#34;)
     else:
-        self.createvisu = False
+        self.validsize = False
         self.canvasgrid_entry.config(bg=&#34;red&#34;)</code></pre>
 </details>
 </dd>
@@ -962,12 +1010,24 @@ is the name of the widget class.</p></section>
 <span>(</span><span>parent)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>The class used for the popup window when clicking on a Canvas</p></section>
+<section class="desc"><p>The class used for the popup window when clicking on a Canvas</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>parent</code></strong> :&ensp;<code>Widget</code></dt>
+<dd>The widget used as the parent (should be the one invoking it)</dd>
+<dt><strong><code>Note</code></strong></dt>
+<dd>Have to define a parent to the toplevel so when the TopLevel gets destroyed
+the 'ModeSelectionPopup' object still keeps the data selected.</dd>
+</dl></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class ModeSelectionPopup(object):
-    &#34;&#34;&#34;
-    The class used for the popup window when clicking on a Canvas
+    &#34;&#34;&#34;The class used for the popup window when clicking on a Canvas
+    Args:
+        parent (Widget): The widget used as the parent (should be the one invoking it)
+    Note: 
+        Have to define a parent to the toplevel so when the TopLevel gets destroyed
+        the &#39;ModeSelectionPopup&#39; object still keeps the data selected.
     &#34;&#34;&#34;
     def __init__(self, parent):
         self.toplevel = Toplevel(parent)
@@ -988,28 +1048,28 @@ is the name of the widget class.</p></section>
         )
         self.l1.grid(row=0, column=0)
 
-        self.createlistboxes()
+        self.CreateListboxes()
 
         # Ok Button
         self.b = Button(self.bottomframe,
-                        text=&#34;Base model&#34;, command=self.onclickbase)
+                        text=&#34;Base model&#34;, command=self.OnClickBase)
         self.b.grid(row=0, column=0, sticky=N+E+W+S)
         self.b = Button(self.bottomframe,
-                        text=&#34;None&#34;, command=self.onclicknone)
+                        text=&#34;None&#34;, command=self.OnClickNone)
         self.b.grid(row=0, column=1, sticky=N+E+W+S)
-        self.b = Button(self.bottomframe, text=&#34;Ok&#34;, command=self.onclickok)
+        self.b = Button(self.bottomframe, text=&#34;Ok&#34;, command=self.OnClickOk)
         self.b.grid(row=1, column=0)
 
         # Cancel Button
         self.cancelbutton = Button(
-            self.bottomframe, text=&#34;Cancel&#34;, command=self.cancel)
+            self.bottomframe, text=&#34;Cancel&#34;, command=self.OnClickCancel)
         self.cancelbutton.grid(row=1, column=1)
 
         self.toplevel.update_idletasks()
         self.toplevel.grab_set()
         # WIDGETS INIT -----------------------------------------
 
-    def createlistboxes(self):  # Pretty self explanatory
+    def CreateListboxes(self):  # Pretty self explanatory
         &#34;&#34;&#34;Simply creates the listboxes to select the function and parameter&#34;&#34;&#34;
         # Functions Listbox
         self.functionLb = Listbox(self.frame,exportselection=False)
@@ -1032,49 +1092,41 @@ is the name of the widget class.</p></section>
         # self.paramsLb.bind(&#34;&lt;&lt;ListboxSelect&gt;&gt;&#34;, self.onlistbox2change)
         self.paramsLb.grid(row=1, column=1)
 
-    def cancel(self):  # When Cancel is clicked
+    def OnClickCancel(self):  
+        &#34;&#34;&#34;When Cancel is clicked&#34;&#34;&#34;
         self.selection = [&#34;&#34;, &#34;&#34;]
         self.toplevel.destroy()
 
-    def onclicknone(self):
+    def OnClickNone(self):
+        &#34;&#34;&#34;When None is clicked&#34;&#34;&#34;
         self.selection = &#34;none&#34;
         self.toplevel.destroy()
 
-    def onclickbase(self):
+    def OnClickBase(self):
+        &#34;&#34;&#34;When Base is clicked&#34;&#34;&#34;
         self.selection = &#34;base&#34;
         self.toplevel.destroy()
 
-    def onclickok(self):  # When Ok is clicked
+    def OnClickOk(self):
+        &#34;&#34;&#34;When Ok is clicked&#34;&#34;&#34;
         self.selection[0] = self.functionLb.get(ACTIVE)
         self.selection[1] = self.paramsLb.get(ACTIVE)
         self.toplevel.destroy()
 
-    def getchoice(self):  # Returns the selected option
+    def GetChoice(self):  # Returns the selected option
         self.toplevel.wait_window()
         return self.selection</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
-<dt id="main.ModeSelectionPopup.cancel"><code class="name flex">
-<span>def <span class="ident">cancel</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def cancel(self):  # When Cancel is clicked
-    self.selection = [&#34;&#34;, &#34;&#34;]
-    self.toplevel.destroy()</code></pre>
-</details>
-</dd>
-<dt id="main.ModeSelectionPopup.createlistboxes"><code class="name flex">
-<span>def <span class="ident">createlistboxes</span></span>(<span>self)</span>
+<dt id="main.ModeSelectionPopup.CreateListboxes"><code class="name flex">
+<span>def <span class="ident">CreateListboxes</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Simply creates the listboxes to select the function and parameter</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def createlistboxes(self):  # Pretty self explanatory
+<pre><code class="python">def CreateListboxes(self):  # Pretty self explanatory
     &#34;&#34;&#34;Simply creates the listboxes to select the function and parameter&#34;&#34;&#34;
     # Functions Listbox
     self.functionLb = Listbox(self.frame,exportselection=False)
@@ -1098,90 +1150,72 @@ is the name of the widget class.</p></section>
     self.paramsLb.grid(row=1, column=1)</code></pre>
 </details>
 </dd>
-<dt id="main.ModeSelectionPopup.getchoice"><code class="name flex">
-<span>def <span class="ident">getchoice</span></span>(<span>self)</span>
+<dt id="main.ModeSelectionPopup.GetChoice"><code class="name flex">
+<span>def <span class="ident">GetChoice</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def getchoice(self):  # Returns the selected option
+<pre><code class="python">def GetChoice(self):  # Returns the selected option
     self.toplevel.wait_window()
     return self.selection</code></pre>
 </details>
 </dd>
-<dt id="main.ModeSelectionPopup.onclickbase"><code class="name flex">
-<span>def <span class="ident">onclickbase</span></span>(<span>self)</span>
+<dt id="main.ModeSelectionPopup.OnClickBase"><code class="name flex">
+<span>def <span class="ident">OnClickBase</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>When Base is clicked</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def onclickbase(self):
+<pre><code class="python">def OnClickBase(self):
+    &#34;&#34;&#34;When Base is clicked&#34;&#34;&#34;
     self.selection = &#34;base&#34;
     self.toplevel.destroy()</code></pre>
 </details>
 </dd>
-<dt id="main.ModeSelectionPopup.onclicknone"><code class="name flex">
-<span>def <span class="ident">onclicknone</span></span>(<span>self)</span>
+<dt id="main.ModeSelectionPopup.OnClickCancel"><code class="name flex">
+<span>def <span class="ident">OnClickCancel</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>When Cancel is clicked</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def onclicknone(self):
+<pre><code class="python">def OnClickCancel(self):  
+    &#34;&#34;&#34;When Cancel is clicked&#34;&#34;&#34;
+    self.selection = [&#34;&#34;, &#34;&#34;]
+    self.toplevel.destroy()</code></pre>
+</details>
+</dd>
+<dt id="main.ModeSelectionPopup.OnClickNone"><code class="name flex">
+<span>def <span class="ident">OnClickNone</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>When None is clicked</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def OnClickNone(self):
+    &#34;&#34;&#34;When None is clicked&#34;&#34;&#34;
     self.selection = &#34;none&#34;
     self.toplevel.destroy()</code></pre>
 </details>
 </dd>
-<dt id="main.ModeSelectionPopup.onclickok"><code class="name flex">
-<span>def <span class="ident">onclickok</span></span>(<span>self)</span>
+<dt id="main.ModeSelectionPopup.OnClickOk"><code class="name flex">
+<span>def <span class="ident">OnClickOk</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>When Ok is clicked</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def onclickok(self):  # When Ok is clicked
+<pre><code class="python">def OnClickOk(self):
+    &#34;&#34;&#34;When Ok is clicked&#34;&#34;&#34;
     self.selection[0] = self.functionLb.get(ACTIVE)
     self.selection[1] = self.paramsLb.get(ACTIVE)
     self.toplevel.destroy()</code></pre>
 </details>
 </dd>
 </dl>
-</dd>
-<dt id="main.MyScale"><code class="flex name class">
-<span>class <span class="ident">MyScale</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Scale widget which can display a numerical scale.</p>
-<p>Construct a scale widget with the parent MASTER.</p>
-<p>Valid resource names: activebackground, background, bigincrement, bd,
-bg, borderwidth, command, cursor, digits, fg, font, foreground, from,
-highlightbackground, highlightcolor, highlightthickness, label,
-length, orient, relief, repeatdelay, repeatinterval, resolution,
-showvalue, sliderlength, sliderrelief, state, takefocus,
-tickinterval, to, troughcolor, variable, width.</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">class MyScale(Scale):  # My Scale class (was created to add a &#34;maximum&#34; value but not really necessary since widget.cget() exists)
-    def __init__(self, *args, **kwargs):
-        Scale.__init__(self, *args, **kwargs)
-        try:
-            self.maximum = kwargs[&#34;to&#34;]
-        except:
-            self.maximum = 100</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>tkinter.Scale</li>
-<li>tkinter.Widget</li>
-<li>tkinter.BaseWidget</li>
-<li>tkinter.Misc</li>
-<li>tkinter.Pack</li>
-<li>tkinter.Place</li>
-<li>tkinter.Grid</li>
-</ul>
 </dd>
 <dt id="main.VisuWindow"><code class="flex name class">
 <span>class <span class="ident">VisuWindow</span></span>
@@ -1200,26 +1234,24 @@ use, visual, width.</p></section>
     &#34;&#34;&#34;The visualization window&#34;&#34;&#34;
     def __init__(self, *args, **kwargs):
         print(&#34;Creating visualization window&#34;)
-        &#34;&#34;&#34;global config
-        global visuconfig
-        config = json.load(open(&#34;config.json&#34;))
-        visuconfig = config[&#34;visu&#34;]&#34;&#34;&#34;
         self.canvgridsize = kwargs[&#34;canvgridsize&#34;]
-        del kwargs[&#34;canvgridsize&#34;]
+        del kwargs[&#34;canvgridsize&#34;] # If not deleted from the list causes errors with Tkinter
         Toplevel.__init__(self, *args, *kwargs)
         self.title(&#34;Visualization&#34;)
-        self.window_width   = ScreenResolution[0]
-        self.window_height  = ScreenResolution[1]
-        self.maxsize(self.window_width, self.window_height)
-        #self.resizable = (False,False)
+        self.width   = ScreenResolution[0]
+        self.height  = ScreenResolution[1]
+        self.maxsize(self.width, self.height)
         self.cb_checked = BooleanVar()
         self.cb_checked.set(False)
         self.ownedcanvas = []
         self.askedstop = False
         self.initwidgets()
-        self.Visu_Window()
         Oc.windows[&#34;Visu&#34;] = self  # NAMING VISU WINDOW
         self.grab_set()
+        thread = threading.Thread(target=ThreadTarget, daemon=True)
+        Oc.threadings[&#39;Thread_Scan1&#39;] = thread  # NAMING THREAD (ctrl+f s)
+        thread.start()
+        self.after(100, QueueCheck)
 
 
     def initwidgets(self):  
@@ -1357,7 +1389,7 @@ use, visual, width.</p></section>
         # Bug fix (slider starting at -1 if no image found)
         if numberofpngs == -1:
             numberofpngs = 1
-        self.slider = MyScale(
+        self.slider = Scale(
             self.bottomframe,
             from_=0,
             to=numberofpngs-1,
@@ -1373,6 +1405,8 @@ use, visual, width.</p></section>
 
     def checkbox_get(self):
         &#34;&#34;&#34;Gets the state of the checkbox
+        Returns:
+            (bool)
         &#34;&#34;&#34;
         return self.cb_checked.get()
 
@@ -1422,7 +1456,7 @@ use, visual, width.</p></section>
     def continue_anim(self):  
         &#34;&#34;&#34; Plays the animation
         Calls itself every x miliseconds and pushes the slider&#34;&#34;&#34;
-        if self.playsliderpos &gt; self.to or self.askedstop or self.playsliderpos &gt; self.slider.maximum:
+        if self.playsliderpos &gt; self.to or self.askedstop or self.playsliderpos &gt; self.slider.cget(&#34;to&#34;):
             self.slider.set(self._from)
             self.toend_checkbox.configure(state=NORMAL)
             return
@@ -1465,14 +1499,7 @@ use, visual, width.</p></section>
                         model.actualModelOut.remove(filename)
                 canvas.ChangeImage(filename)
             elif canvas.showbasemodel:
-                canvas.ChangeImage(NameFormat(name_format, num)+image_extension)
-
-    def Visu_Window(self):  # Will decide later if i put this in __init__
-        # Initializes the last components
-        thread = threading.Thread(target=ThreadTarget, daemon=True)
-        Oc.threadings[&#39;Thread_Scan1&#39;] = thread  # NAMING THREAD (ctrl+f s)
-        thread.start()
-        self.after(100, AfterCallback)</code></pre>
+                canvas.ChangeImage(NameFormat(name_format, num)+image_extension)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -1525,30 +1552,19 @@ param int num: the number the event passes (the slider's actual value)</p></sect
             canvas.ChangeImage(NameFormat(name_format, num)+image_extension)</code></pre>
 </details>
 </dd>
-<dt id="main.VisuWindow.Visu_Window"><code class="name flex">
-<span>def <span class="ident">Visu_Window</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Visu_Window(self):  # Will decide later if i put this in __init__
-    # Initializes the last components
-    thread = threading.Thread(target=ThreadTarget, daemon=True)
-    Oc.threadings[&#39;Thread_Scan1&#39;] = thread  # NAMING THREAD (ctrl+f s)
-    thread.start()
-    self.after(100, AfterCallback)</code></pre>
-</details>
-</dd>
 <dt id="main.VisuWindow.checkbox_get"><code class="name flex">
 <span>def <span class="ident">checkbox_get</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Gets the state of the checkbox</p></section>
+<section class="desc"><p>Gets the state of the checkbox</p>
+<h2 id="returns">Returns</h2>
+<p>(bool)</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def checkbox_get(self):
     &#34;&#34;&#34;Gets the state of the checkbox
+    Returns:
+        (bool)
     &#34;&#34;&#34;
     return self.cb_checked.get()</code></pre>
 </details>
@@ -1564,7 +1580,7 @@ Calls itself every x miliseconds and pushes the slider</p></section>
 <pre><code class="python">def continue_anim(self):  
     &#34;&#34;&#34; Plays the animation
     Calls itself every x miliseconds and pushes the slider&#34;&#34;&#34;
-    if self.playsliderpos &gt; self.to or self.askedstop or self.playsliderpos &gt; self.slider.maximum:
+    if self.playsliderpos &gt; self.to or self.askedstop or self.playsliderpos &gt; self.slider.cget(&#34;to&#34;):
         self.slider.set(self._from)
         self.toend_checkbox.configure(state=NORMAL)
         return
@@ -1714,7 +1730,7 @@ Calls itself every x miliseconds and pushes the slider</p></section>
     # Bug fix (slider starting at -1 if no image found)
     if numberofpngs == -1:
         numberofpngs = 1
-    self.slider = MyScale(
+    self.slider = Scale(
         self.bottomframe,
         from_=0,
         to=numberofpngs-1,
@@ -1819,20 +1835,32 @@ Input verifications</p></section>
 <span>(</span><span>keyname='', model=None, size='', label=None, *args, **kwargs)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Canvas used for visualization</p>
-<p>:param str keyname: Name in the collection
-if not specified = Visu_Canvas+lengthofcollection
-:param str size: Size of the canvas ex:("200x200")</p></section>
+<section class="desc"><p>This class is the class used to create de Canvases that displays the created models.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>keyname</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Key name in the collection</dd>
+</dl>
+<p>if not specified = Visu_Canvas+lengthofcollection</p>
+<dl>
+<dt><strong><code>size</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Size of the canvas ex:("200x200")</dd>
+</dl>
+<p>(mostly obsolete since it scales with the window)</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class VisualizationCanvas(Canvas):  
-    &#34;&#34;&#34;Canvas used for visualization&#34;&#34;&#34;
+    &#34;&#34;&#34;This class is the class used to create de Canvases that displays the created models.
+    &#34;&#34;&#34;
     def __init__(self, keyname=&#34;&#34;, model=None, size=&#34;&#34;, label=None, *args, **kwargs):
-        &#39;&#39;&#39;
-        :param str keyname: Name in the collection
-        if not specified = Visu_Canvas+lengthofcollection
-        :param str size: Size of the canvas ex:(&#34;200x200&#34;)
-        &#39;&#39;&#39;
+        &#34;&#34;&#34;
+        Args:
+            keyname (str, optional): Key name in the collection
+            if not specified = Visu_Canvas+lengthofcollection
+            
+            size (str, optional): Size of the canvas ex:(&#34;200x200&#34;)
+            (mostly obsolete since it scales with the window)
+        &#34;&#34;&#34;
         Canvas.__init__(self, *args, **kwargs)
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -1867,33 +1895,35 @@ if not specified = Visu_Canvas+lengthofcollection
             os.makedirs(self.outputpath)
         Oc.canvases[keyname] = self
         self.bind(&#34;&lt;Configure&gt;&#34;, self.OnResize)
-        self.bind(&#34;&lt;Button-3&gt;&#34;, self.changemodel)
+        self.bind(&#34;&lt;Button-3&gt;&#34;, self.ChangeModel)
     
     
     def ChangeImage(self, imagename):  
-        &#34;&#34;&#34;Changes the image displayed on the canvas&#34;&#34;&#34;
-        if self.showbasemodel:
-            imagepath = self.imagefoldername+imagename
-            if self.height &gt; self.width:
-                imagetk = ImageTk.PhotoImage(
-                    master=self, image=Image.open(imagepath).resize(( self.width, floor( self.width/self.baseratio) ) )
-                )
-            else:
-                imagetk = ImageTk.PhotoImage(
-                    master=self, image=Image.open(imagepath).resize((floor( self.height/self.baseratio), self.height) )
-                )
-            self.create_image(self.width/2, self.height/2, image=imagetk, anchor=&#34;center&#34;)
-            self.image = imagetk
-            self.imagepath = imagepath
-            return
-        else:
-            imagepath = self.outputpath+imagename
+        &#34;&#34;&#34;Changes the image displayed on the canvas
+        Args:
+            imagename (str): The name of the image to display
+        &#34;&#34;&#34;
         try:
-            #imgsize = str(self.height)+&#34;x&#34;+str(self.width)
+            if self.showbasemodel:
+                imagepath = self.imagefoldername+imagename
+                if self.height &gt; self.width:
+                    imagetk = ImageTk.PhotoImage(
+                        master=self, image=Image.open(imagepath).resize(( self.width, floor( self.width/self.baseratio) ) )
+                    )
+                else:
+                    imagetk = ImageTk.PhotoImage(
+                        master=self, image=Image.open(imagepath).resize((floor( self.height/self.baseratio), self.height) )
+                    )
+                self.create_image(self.width/2, self.height/2, image=imagetk, anchor=&#34;center&#34;)
+                self.image = imagetk
+                self.imagepath = imagepath
+                return
+            else:
+                imagepath = self.outputpath+imagename
             if self.model.ratio == -1:
                 imagetk = ImageTk.PhotoImage(
                     master=self, image=Image.open(imagepath)
-                )  # .resize((self.width, self.height)))
+                )
                 self.model.ratio = imagetk.width()/imagetk.height()
                 
             # Makes the image&#39;s size proportionnal to it&#39;s creation size
@@ -1914,7 +1944,7 @@ if not specified = Visu_Canvas+lengthofcollection
         &#34;&#34;&#34;When the canvas is resized, resizes the image inside the canvas to fit &#34;&#34;&#34;
         self.width  = int(event.width)
         self.height = int(event.height)
-        if self.model == None:
+        if self.model == None: # No need to calculate the ratio since we know &#34;selectamode.png&#34; is completely square
             # Made so the resize is proportionnal
             if self.height &gt; self.width:
                 image = ImageTk.PhotoImage(master=self, image=Image.open(self.imagepath).resize((self.width,self.width)))
@@ -1925,11 +1955,8 @@ if not specified = Visu_Canvas+lengthofcollection
             if self.height &gt; self.width:
                 image = ImageTk.PhotoImage(
                     master=self,
-                    image=Image.open(
-                        self.imagepath
-                    ).resize(
-                        (self.width,floor(self.width*fabs(self.model.ratio)))
-                    )
+                    # fabs() used to avoid negative numbers
+                    image=Image.open(self.imagepath).resize((self.width,floor(self.width*fabs(self.model.ratio))))  
                 )
             else:
                 image = ImageTk.PhotoImage(master=self, image=Image.open(self.imagepath).resize((floor(self.height*fabs(self.model.ratio)),self.height)))
@@ -1937,10 +1964,10 @@ if not specified = Visu_Canvas+lengthofcollection
         self.create_image(self.width/2, self.height/2, image=image, anchor=&#34;center&#34;)
         self.image = image
     
-    def changemodel(self, event):
+    def ChangeModel(self, event):
         &#34;&#34;&#34;Change visualization mode
-        Gets selected function and param from popup&#34;&#34;&#34;
-        result = ModeSelectionPopup(self).getchoice()
+        Gets selected function and param from the ModeSelectionPopup&#34;&#34;&#34;
+        result = ModeSelectionPopup(self).GetChoice()
         if result != [&#34;&#34;, &#34;&#34;]:
             if result == &#34;none&#34;:  # When the user chose &#34;None&#34; or the canvas does not have a model already
                 self.showbasemodel = False
@@ -1993,33 +2020,40 @@ if not specified = Visu_Canvas+lengthofcollection
 <span>def <span class="ident">ChangeImage</span></span>(<span>self, imagename)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Changes the image displayed on the canvas</p></section>
+<section class="desc"><p>Changes the image displayed on the canvas</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>imagename</code></strong> :&ensp;<code>str</code></dt>
+<dd>The name of the image to display</dd>
+</dl></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def ChangeImage(self, imagename):  
-    &#34;&#34;&#34;Changes the image displayed on the canvas&#34;&#34;&#34;
-    if self.showbasemodel:
-        imagepath = self.imagefoldername+imagename
-        if self.height &gt; self.width:
-            imagetk = ImageTk.PhotoImage(
-                master=self, image=Image.open(imagepath).resize(( self.width, floor( self.width/self.baseratio) ) )
-            )
-        else:
-            imagetk = ImageTk.PhotoImage(
-                master=self, image=Image.open(imagepath).resize((floor( self.height/self.baseratio), self.height) )
-            )
-        self.create_image(self.width/2, self.height/2, image=imagetk, anchor=&#34;center&#34;)
-        self.image = imagetk
-        self.imagepath = imagepath
-        return
-    else:
-        imagepath = self.outputpath+imagename
+    &#34;&#34;&#34;Changes the image displayed on the canvas
+    Args:
+        imagename (str): The name of the image to display
+    &#34;&#34;&#34;
     try:
-        #imgsize = str(self.height)+&#34;x&#34;+str(self.width)
+        if self.showbasemodel:
+            imagepath = self.imagefoldername+imagename
+            if self.height &gt; self.width:
+                imagetk = ImageTk.PhotoImage(
+                    master=self, image=Image.open(imagepath).resize(( self.width, floor( self.width/self.baseratio) ) )
+                )
+            else:
+                imagetk = ImageTk.PhotoImage(
+                    master=self, image=Image.open(imagepath).resize((floor( self.height/self.baseratio), self.height) )
+                )
+            self.create_image(self.width/2, self.height/2, image=imagetk, anchor=&#34;center&#34;)
+            self.image = imagetk
+            self.imagepath = imagepath
+            return
+        else:
+            imagepath = self.outputpath+imagename
         if self.model.ratio == -1:
             imagetk = ImageTk.PhotoImage(
                 master=self, image=Image.open(imagepath)
-            )  # .resize((self.width, self.height)))
+            )
             self.model.ratio = imagetk.width()/imagetk.height()
             
         # Makes the image&#39;s size proportionnal to it&#39;s creation size
@@ -2037,53 +2071,18 @@ if not specified = Visu_Canvas+lengthofcollection
         print(e)</code></pre>
 </details>
 </dd>
-<dt id="main.VisualizationCanvas.OnResize"><code class="name flex">
-<span>def <span class="ident">OnResize</span></span>(<span>self, event)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>When the canvas is resized, resizes the image inside the canvas to fit</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def OnResize(self, event):
-    &#34;&#34;&#34;When the canvas is resized, resizes the image inside the canvas to fit &#34;&#34;&#34;
-    self.width  = int(event.width)
-    self.height = int(event.height)
-    if self.model == None:
-        # Made so the resize is proportionnal
-        if self.height &gt; self.width:
-            image = ImageTk.PhotoImage(master=self, image=Image.open(self.imagepath).resize((self.width,self.width)))
-        else:
-            image = ImageTk.PhotoImage(master=self, image=Image.open(self.imagepath).resize((self.height,self.height)))
-    else:
-        # Made so the resize is proportionnal
-        if self.height &gt; self.width:
-            image = ImageTk.PhotoImage(
-                master=self,
-                image=Image.open(
-                    self.imagepath
-                ).resize(
-                    (self.width,floor(self.width*fabs(self.model.ratio)))
-                )
-            )
-        else:
-            image = ImageTk.PhotoImage(master=self, image=Image.open(self.imagepath).resize((floor(self.height*fabs(self.model.ratio)),self.height)))
-
-    self.create_image(self.width/2, self.height/2, image=image, anchor=&#34;center&#34;)
-    self.image = image</code></pre>
-</details>
-</dd>
-<dt id="main.VisualizationCanvas.changemodel"><code class="name flex">
-<span>def <span class="ident">changemodel</span></span>(<span>self, event)</span>
+<dt id="main.VisualizationCanvas.ChangeModel"><code class="name flex">
+<span>def <span class="ident">ChangeModel</span></span>(<span>self, event)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Change visualization mode
-Gets selected function and param from popup</p></section>
+Gets selected function and param from the ModeSelectionPopup</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def changemodel(self, event):
+<pre><code class="python">def ChangeModel(self, event):
     &#34;&#34;&#34;Change visualization mode
-    Gets selected function and param from popup&#34;&#34;&#34;
-    result = ModeSelectionPopup(self).getchoice()
+    Gets selected function and param from the ModeSelectionPopup&#34;&#34;&#34;
+    result = ModeSelectionPopup(self).GetChoice()
     if result != [&#34;&#34;, &#34;&#34;]:
         if result == &#34;none&#34;:  # When the user chose &#34;None&#34; or the canvas does not have a model already
             self.showbasemodel = False
@@ -2119,6 +2118,38 @@ Gets selected function and param from popup</p></section>
         print(&#34;Canceled&#34;)</code></pre>
 </details>
 </dd>
+<dt id="main.VisualizationCanvas.OnResize"><code class="name flex">
+<span>def <span class="ident">OnResize</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>When the canvas is resized, resizes the image inside the canvas to fit</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def OnResize(self, event):
+    &#34;&#34;&#34;When the canvas is resized, resizes the image inside the canvas to fit &#34;&#34;&#34;
+    self.width  = int(event.width)
+    self.height = int(event.height)
+    if self.model == None: # No need to calculate the ratio since we know &#34;selectamode.png&#34; is completely square
+        # Made so the resize is proportionnal
+        if self.height &gt; self.width:
+            image = ImageTk.PhotoImage(master=self, image=Image.open(self.imagepath).resize((self.width,self.width)))
+        else:
+            image = ImageTk.PhotoImage(master=self, image=Image.open(self.imagepath).resize((self.height,self.height)))
+    else:
+        # Made so the resize is proportionnal
+        if self.height &gt; self.width:
+            image = ImageTk.PhotoImage(
+                master=self,
+                # fabs() used to avoid negative numbers
+                image=Image.open(self.imagepath).resize((self.width,floor(self.width*fabs(self.model.ratio))))  
+            )
+        else:
+            image = ImageTk.PhotoImage(master=self, image=Image.open(self.imagepath).resize((floor(self.height*fabs(self.model.ratio)),self.height)))
+
+    self.create_image(self.width/2, self.height/2, image=image, anchor=&#34;center&#34;)
+    self.image = image</code></pre>
+</details>
+</dd>
 </dl>
 </dd>
 <dt id="main.VisualizationModel"><code class="flex name class">
@@ -2126,17 +2157,23 @@ Gets selected function and param from popup</p></section>
 <span>(</span><span>function, param)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>The model that will be treated/displayed
-param str function: The function to use from the R Script</p>
-<p>param str param: The parameter to use from the R Script</p></section>
+<section class="desc"><p>The model that will be treated/displayed</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>function</code></strong> :&ensp;<code>str</code></dt>
+<dd>The function to use from the R Script</dd>
+<dt><strong><code>param</code></strong> :&ensp;<code>str</code></dt>
+<dd>The parameter to use from the R Script</dd>
+</dl></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class VisualizationModel(object):  
+    &#34;&#34;&#34;The model that will be treated/displayed&#34;&#34;&#34;
     def __init__(self, function, param):
         &#34;&#34;&#34;
-        The model that will be treated/displayed 
-        param str function: The function to use from the R Script\n
-        param str param: The parameter to use from the R Script
+        Args:
+            function (str): The function to use from the R Script\n
+            param (str): The parameter to use from the R Script
         &#34;&#34;&#34;
         self.function = function
         self.param = param
@@ -2148,7 +2185,8 @@ param str function: The function to use from the R Script</p>
 
     def GetFilenameAtStep(self, timeStep):
         &#34;&#34;&#34;
-        returns the the filename at given step(int) as a str
+        Returns:
+            The filename at given step (int) as str
         &#34;&#34;&#34;
         return NameFormat(self.nameFormat, timeStep)+self.imageExtension</code></pre>
 </details>
@@ -2158,12 +2196,17 @@ param str function: The function to use from the R Script</p>
 <span>def <span class="ident">GetFilenameAtStep</span></span>(<span>self, timeStep)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>returns the the filename at given step(int) as a str</p></section>
+<section class="desc"><h2 id="returns">Returns</h2>
+<dl>
+<dt><code>The</code> <code>filename</code> <code>at</code> <code>given</code> <code>step</code> (<code>int</code>) <code>as</code> <code>str</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def GetFilenameAtStep(self, timeStep):
     &#34;&#34;&#34;
-    returns the the filename at given step(int) as a str
+    Returns:
+        The filename at given step (int) as str
     &#34;&#34;&#34;
     return NameFormat(self.nameFormat, timeStep)+self.imageExtension</code></pre>
 </details>
@@ -2181,8 +2224,8 @@ param str function: The function to use from the R Script</p>
 <ul id="index">
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="main.AfterCallback" href="#main.AfterCallback">AfterCallback</a></code></li>
 <li><code><a title="main.NameFormat" href="#main.NameFormat">NameFormat</a></code></li>
+<li><code><a title="main.QueueCheck" href="#main.QueueCheck">QueueCheck</a></code></li>
 <li><code><a title="main.SliderUpdate" href="#main.SliderUpdate">SliderUpdate</a></code></li>
 <li><code><a title="main.ThreadTarget" href="#main.ThreadTarget">ThreadTarget</a></code></li>
 </ul>
@@ -2199,22 +2242,18 @@ param str function: The function to use from the R Script</p>
 <li>
 <h4><code><a title="main.ModeSelectionPopup" href="#main.ModeSelectionPopup">ModeSelectionPopup</a></code></h4>
 <ul class="two-column">
-<li><code><a title="main.ModeSelectionPopup.cancel" href="#main.ModeSelectionPopup.cancel">cancel</a></code></li>
-<li><code><a title="main.ModeSelectionPopup.createlistboxes" href="#main.ModeSelectionPopup.createlistboxes">createlistboxes</a></code></li>
-<li><code><a title="main.ModeSelectionPopup.getchoice" href="#main.ModeSelectionPopup.getchoice">getchoice</a></code></li>
-<li><code><a title="main.ModeSelectionPopup.onclickbase" href="#main.ModeSelectionPopup.onclickbase">onclickbase</a></code></li>
-<li><code><a title="main.ModeSelectionPopup.onclicknone" href="#main.ModeSelectionPopup.onclicknone">onclicknone</a></code></li>
-<li><code><a title="main.ModeSelectionPopup.onclickok" href="#main.ModeSelectionPopup.onclickok">onclickok</a></code></li>
+<li><code><a title="main.ModeSelectionPopup.CreateListboxes" href="#main.ModeSelectionPopup.CreateListboxes">CreateListboxes</a></code></li>
+<li><code><a title="main.ModeSelectionPopup.GetChoice" href="#main.ModeSelectionPopup.GetChoice">GetChoice</a></code></li>
+<li><code><a title="main.ModeSelectionPopup.OnClickBase" href="#main.ModeSelectionPopup.OnClickBase">OnClickBase</a></code></li>
+<li><code><a title="main.ModeSelectionPopup.OnClickCancel" href="#main.ModeSelectionPopup.OnClickCancel">OnClickCancel</a></code></li>
+<li><code><a title="main.ModeSelectionPopup.OnClickNone" href="#main.ModeSelectionPopup.OnClickNone">OnClickNone</a></code></li>
+<li><code><a title="main.ModeSelectionPopup.OnClickOk" href="#main.ModeSelectionPopup.OnClickOk">OnClickOk</a></code></li>
 </ul>
-</li>
-<li>
-<h4><code><a title="main.MyScale" href="#main.MyScale">MyScale</a></code></h4>
 </li>
 <li>
 <h4><code><a title="main.VisuWindow" href="#main.VisuWindow">VisuWindow</a></code></h4>
 <ul class="two-column">
 <li><code><a title="main.VisuWindow.OnSliderStep" href="#main.VisuWindow.OnSliderStep">OnSliderStep</a></code></li>
-<li><code><a title="main.VisuWindow.Visu_Window" href="#main.VisuWindow.Visu_Window">Visu_Window</a></code></li>
 <li><code><a title="main.VisuWindow.checkbox_get" href="#main.VisuWindow.checkbox_get">checkbox_get</a></code></li>
 <li><code><a title="main.VisuWindow.continue_anim" href="#main.VisuWindow.continue_anim">continue_anim</a></code></li>
 <li><code><a title="main.VisuWindow.initcanvas" href="#main.VisuWindow.initcanvas">initcanvas</a></code></li>
@@ -2229,8 +2268,8 @@ param str function: The function to use from the R Script</p>
 <h4><code><a title="main.VisualizationCanvas" href="#main.VisualizationCanvas">VisualizationCanvas</a></code></h4>
 <ul class="">
 <li><code><a title="main.VisualizationCanvas.ChangeImage" href="#main.VisualizationCanvas.ChangeImage">ChangeImage</a></code></li>
+<li><code><a title="main.VisualizationCanvas.ChangeModel" href="#main.VisualizationCanvas.ChangeModel">ChangeModel</a></code></li>
 <li><code><a title="main.VisualizationCanvas.OnResize" href="#main.VisualizationCanvas.OnResize">OnResize</a></code></li>
-<li><code><a title="main.VisualizationCanvas.changemodel" href="#main.VisualizationCanvas.changemodel">changemodel</a></code></li>
 </ul>
 </li>
 <li>

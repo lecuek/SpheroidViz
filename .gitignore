@@ -129,7 +129,7 @@ tests/
 *.png
 .png/
 !selectamode.png
-output/
+output/*
 .jpeg/
 .svg/
 Images/
