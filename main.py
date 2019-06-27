@@ -373,16 +373,16 @@ class VisuWindow(Toplevel):
         self.initwidgets()
         Oc.windows["Visu"] = self  # NAMING VISU WINDOW
         self.grab_set()
+        print("AHEHEHAHAHE")
         thread = threading.Thread(target=ThreadTarget, daemon=True)
         Oc.threadings['Thread_Scan1'] = thread  # NAMING THREAD (ctrl+f s)
         thread.start()
         self.after(100, QueueCheck)
 
-
     def initwidgets(self):  
         """ Initializes widgets"""
         print("Creating widgets..")
-        self.topframe       = Frame(self)
+        self.topframe       = Frame(self, bg="#6200EE")
         self.bottomframe    = Frame(self)
         self.initcanvas(self.canvgridsize)
         self.initplaystop()
@@ -444,8 +444,6 @@ class VisuWindow(Toplevel):
         """ Initializes the play/stop functionnality widgets"""
         self.playframe = Frame(self.bottomframe)
         self.playframe.grid(row=1, column=0, sticky="nesw")
-        self.playframe.grid_columnconfigure(6, weight=1)
-
 
         self.playbutton = Button(
             self.playframe, text="Play", command=self.play_anim)
@@ -479,7 +477,7 @@ class VisuWindow(Toplevel):
         )
         self.entryto.grid(row=0, column=5)
 
-        self.textspeed = Label(self.playframe, text=" Speed (ms)")
+        self.textspeed = Label(self.playframe, text="Speed (ms)")
         self.textspeed.grid(row=0, column=6)
         self.entryspeed_text = StringVar()
         self.entryspeed = Entry(
@@ -508,7 +506,7 @@ class VisuWindow(Toplevel):
         self.toend_checkbox.grid(row=0, column=8)
         
         # Start simulation
-        self.simubutton = Button(self.playframe, text="OpenSalami", command=self.StartSimulation)
+        self.simubutton = Button(self.playframe, text="Start simulation", command=self.StartSimulation)
         self.simubutton.grid(row=0, column=9)
         
         # SCALE
@@ -535,12 +533,12 @@ class VisuWindow(Toplevel):
     def StartSimulation(self):
         
         choice = LaunchSimuPopup(self).GetChoice()
+        if choice[0] == "":
+            return
         if choice[1]:
             choice[1] = "-clear"
         else:
             choice[1] = ""
-        if choice[0] == "":
-            return
         runcommand = "/bin/bash ./run.sh " + str(choice[1]) + " " + str(choice[0])
         print("Found run_model_pipeline.sh in parent directory, executing..")
         subprocess.call(["x-terminal-emulator","-e", runcommand])
@@ -707,6 +705,8 @@ class MainWindow(Tk):
         """
         if self.validsize:
             self.visuwindow = VisuWindow(self, canvgridsize=self.canvasgrid_var.get())
+            self.visuwindow.wait_window()
+            self.destroy()
 
 
 def QueueCheck():
