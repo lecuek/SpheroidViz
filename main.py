@@ -333,20 +333,24 @@ class LaunchSimuPopup(object):
         self.cancelbutton.grid(row=0, column=1)
     
     def OnClickOk(self):
+        """When Ok is clicked"""
         if self.valid:
             self.selection[0] = self.textvar.get()
             self.selection[1] = self.clearVar.get()
             self.toplevel.destroy()
     
     def GetChoice(self):
+        """Returns the text in the entry"""
         self.toplevel.wait_window()
         return self.selection
 
     def OnClickCancel(self):
+        """When Cancel is clicked"""
         self.selection = ""
         self.toplevel.destroy()
     
     def OnType(self, var):
+        """When typing in the Entry box"""
         if re.match(self.reg, var.get()):
             self.valid = True
             self.entry.config(bg="green")
