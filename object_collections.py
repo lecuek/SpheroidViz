@@ -1,4 +1,5 @@
 class DictPlus(dict):
+<<<<<<< HEAD
     """Extends the dictionnary class
     Args:
         _type (str): The type of the objects that will be contained in the dictionnary.
@@ -17,6 +18,16 @@ class DictPlus(dict):
 class ObjectCollection:
     """Class containing the collections.
     """
+=======
+    def __init__(self, _typename, *args, **kwargs):
+        dict.__init__(self, *args, *kwargs)
+        self.type = str(_typename)
+
+    def add(self, _object):
+        self[self.type+"_"+str(len(self))] = _object
+
+class ObjectCollection:
+>>>>>>> e484a4fa87c0cc8dbf0503b82976fdd746251fda
     windows = DictPlus("Window")
     sliders = DictPlus("Slider")
     canvases = DictPlus("Canvas")
