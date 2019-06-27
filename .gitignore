@@ -129,11 +129,7 @@ tests/
 *.png
 .png/
 !selectamode.png
-<<<<<<< HEAD
 output/*
-=======
-output/
->>>>>>> e484a4fa87c0cc8dbf0503b82976fdd746251fda
 .jpeg/
 .svg/
 Images/

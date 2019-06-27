@@ -373,7 +373,6 @@ class VisuWindow(Toplevel):
         self.initwidgets()
         Oc.windows["Visu"] = self  # NAMING VISU WINDOW
         self.grab_set()
-        print("AHEHEHAHAHE")
         thread = threading.Thread(target=ThreadTarget, daemon=True)
         Oc.threadings['Thread_Scan1'] = thread  # NAMING THREAD (ctrl+f s)
         thread.start()
@@ -533,14 +532,13 @@ class VisuWindow(Toplevel):
     def StartSimulation(self):
         
         choice = LaunchSimuPopup(self).GetChoice()
-        if choice[0] == "":
+        if type(choice) is str:
             return
         if choice[1]:
             choice[1] = "-clear"
         else:
             choice[1] = ""
         runcommand = "/bin/bash ./run.sh " + str(choice[1]) + " " + str(choice[0])
-        print("Found run_model_pipeline.sh in parent directory, executing..")
         subprocess.call(["x-terminal-emulator","-e", runcommand])
             
     def checkbox_get(self):
@@ -705,6 +703,7 @@ class MainWindow(Tk):
         """
         if self.validsize:
             self.visuwindow = VisuWindow(self, canvgridsize=self.canvasgrid_var.get())
+            self.visuwindow.grab_set()
             self.visuwindow.wait_window()
             self.destroy()
 

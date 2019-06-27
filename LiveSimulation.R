@@ -9,24 +9,15 @@ library(oce)
 library(reshape2)
 
 sliceZ <- 0
-<<<<<<< HEAD
 #setwd("../")
 #getwd()
 #print(getwd())
 folder <- "../output/output_data/"
-=======
-getwd()
-folder <- "./output/output_data/"
->>>>>>> e484a4fa87c0cc8dbf0503b82976fdd746251fda
 
 GET_MEDIUM_OBJECT<-function(TIME){
   files.names <- dir(folder, pattern = "*_microenvironment0.mat")
   path_file <-
-<<<<<<< HEAD
     paste("../output/output_data/", files.names[TIME], sep = "")
-=======
-    paste("./output/output_data/", files.names[TIME], sep = "")
->>>>>>> e484a4fa87c0cc8dbf0503b82976fdd746251fda
   MEDIUM <- readMat(path_file)
   MEDIUM <- MEDIUM$multiscale.microenvironment
   MEDIUM <- t(MEDIUM)
@@ -89,11 +80,7 @@ GET_CELL_OBJECT<-function(TIME){
   files.names2 <- dir(folder, pattern = "*_cells_physicell.mat")
 cells <- data.frame()
   path_file <-
-<<<<<<< HEAD
     paste("../output/output_data/", files.names2[TIME], sep = "")
-=======
-    paste("./output/output_data/", files.names2[TIME], sep = "")
->>>>>>> e484a4fa87c0cc8dbf0503b82976fdd746251fda
   cells_temp <- readMat(path_file)
   cells_temp <- cells_temp$cells
   cells_temp <- t(cells_temp)
